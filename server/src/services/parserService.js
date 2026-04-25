@@ -47,7 +47,8 @@ const matrixToObjects = (matrix) => {
 
   const firstRow = rows[0];
   const hasHeaders = looksLikeHeaderRow(firstRow);
-  const headers = (hasHeaders ? firstRow : firstRow.map((_, index) => `column_${index + 1}`)).map(sanitizeHeader);
+  const originalHeaders = hasHeaders ? firstRow : firstRow.map((_, index) => `Column ${index + 1}`);
+  const headers = originalHeaders.map(sanitizeHeader);
   const dataRows = hasHeaders ? rows.slice(1) : rows;
 
   const warnings = [];
@@ -69,7 +70,14 @@ const matrixToObjects = (matrix) => {
     throw createError('The uploaded file only contains headers or empty rows.');
   }
 
-  return { rows: objects, warnings };
+  return {
+    rows: objects,
+    warnings,
+    headers: headers.map((normalized, index) => ({
+      original: originalHeaders[index] ?? `Column ${index + 1}`,
+      normalized,
+    })),
+  };
 };
 
 export const detectFileType = (file) => {

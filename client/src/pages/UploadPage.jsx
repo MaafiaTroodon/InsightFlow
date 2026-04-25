@@ -7,6 +7,7 @@ import { Card } from '../components/Card.jsx';
 import { DatasetPreviewModal } from '../components/DatasetPreviewModal.jsx';
 import { LoadingState } from '../components/LoadingState.jsx';
 import { PageHeader } from '../components/PageHeader.jsx';
+import { ScrollReveal } from '../components/ScrollReveal.jsx';
 import { UploadDropzone } from '../components/UploadDropzone.jsx';
 import { formatDateTime } from '../utils/formatters.js';
 
@@ -110,8 +111,8 @@ export function UploadPage() {
         description="Upload a CSV or Excel file, review the cleaned data in a modal, then open the dashboard when you are ready."
       />
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
-        <div className="min-w-0">
+      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)]">
+        <ScrollReveal className="min-w-0">
           {isUploading ? (
             <LoadingState
               title="Parsing and cleaning your data"
@@ -204,38 +205,51 @@ export function UploadPage() {
               {error}
             </div>
           ) : null}
-        </div>
+        </ScrollReveal>
 
-        <Card className="p-6 sm:p-8">
+        <ScrollReveal delay={80}>
+        <Card className="overflow-hidden p-6 sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">How it works</p>
           <h2 className="mt-3 text-2xl font-extrabold text-white">Upload → Parse → Clean → Store → Analyze</h2>
           <div className="mt-6 grid gap-4">
             {pipelineSteps.map((step, index) => (
-              <article key={step.label} className="rounded-2xl bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Step {index + 1}</p>
-                <h3 className="mt-2 text-base font-bold text-white">{step.label}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-300">{step.description}</p>
+              <article key={step.label} className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-teal-400/15 hover:bg-white/[0.07]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Step {index + 1}</p>
+                    <h3 className="mt-2 text-base font-bold text-white">{step.label}</h3>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-500/10 text-lg text-teal-300">
+                    {index === 0 ? '↑' : index === 1 ? '{}' : index === 2 ? '✓' : index === 3 ? '□' : '≈'}
+                  </div>
+                </div>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{step.description}</p>
               </article>
             ))}
           </div>
         </Card>
+        </ScrollReveal>
       </section>
 
-      <section className="mt-8">
-        <Card className="p-6">
+      <ScrollReveal delay={120}>
+      <section className="mt-8 pb-8">
+        <Card className="overflow-hidden p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">Upload status timeline</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {uploadTimeline.map((step) => (
-              <article key={step.label} className="rounded-2xl bg-white/5 p-4">
+              <article key={step.label} className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-teal-400/15 hover:bg-white/[0.07]">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                      step.complete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-slate-400'
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
+                      step.complete ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/20' : 'bg-white/10 text-slate-400'
                     }`}
                   >
                     {step.complete ? '✓' : '•'}
                   </div>
-                  <p className="font-semibold text-white">{step.label}</p>
+                  <div>
+                    <p className="font-semibold text-white">{step.label}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Stage</p>
+                  </div>
                 </div>
                 <p className="mt-3 text-sm text-slate-400">{step.detail}</p>
               </article>
@@ -243,6 +257,7 @@ export function UploadPage() {
           </div>
         </Card>
       </section>
+      </ScrollReveal>
 
       <DatasetPreviewModal
         isOpen={isPreviewOpen}

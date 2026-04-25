@@ -2,7 +2,7 @@ import express from 'express';
 import { prisma } from '../utils/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { buildInsights } from '../services/insightService.js';
-import { buildChartData, buildSummary, sanitizeRowsForDisplay } from '../services/summaryService.js';
+import { buildChartData, buildExecutiveSummary, buildSummary, sanitizeRowsForDisplay } from '../services/summaryService.js';
 
 const router = express.Router();
 
@@ -72,6 +72,11 @@ router.get('/datasets/:id', requireAuth, async (req, res, next) => {
 
     const rows = sanitizeRowsForDisplay(dataset.rows);
     const summary = buildSummary(dataset.rows);
+    const executiveSummary = buildExecutiveSummary({
+      dataset,
+      rows: dataset.rows,
+      summary,
+    });
 
     return res.json({
       dataset: {
@@ -83,10 +88,12 @@ router.get('/datasets/:id', requireAuth, async (req, res, next) => {
         rowCount: dataset.rowCount,
         duplicateRowsRemoved: dataset.duplicateRowsRemoved,
         missingValuesFixed: dataset.missingValuesFixed,
+        columnMapping: dataset.columnMapping ?? null,
         createdAt: dataset.createdAt,
       },
       rows,
       summary,
+      executiveSummary,
       chartData: buildChartData(dataset.rows),
       insights: buildInsights({
         rows: dataset.rows,
@@ -96,6 +103,7 @@ router.get('/datasets/:id', requireAuth, async (req, res, next) => {
       }),
       rawPreview: dataset.rows.slice(0, 10).map((row) => row.rawJson).filter(Boolean),
       cleanedPreview: rows.slice(0, 10),
+      columnMapping: dataset.columnMapping ?? null,
       warnings: Array.isArray(dataset.warnings) ? dataset.warnings : [],
     });
   } catch (error) {

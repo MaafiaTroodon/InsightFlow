@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
 import { PageHeader } from '../components/PageHeader.jsx';
+import { ScrollReveal } from '../components/ScrollReveal.jsx';
 
 const features = [
   {
@@ -127,14 +128,15 @@ function FeatureVisual({ type }) {
 export function HomePage() {
   return (
     <div className="mx-auto max-w-7xl px-6">
-      <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 px-8 py-12 shadow-glow lg:px-14">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+      <ScrollReveal>
+        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 px-5 py-10 shadow-glow sm:px-8 lg:px-14">
+          <div className="grid gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-teal-300">Portfolio-ready business analytics</p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-extrabold tracking-tight text-white md:text-6xl">
+            <h1 className="mt-4 max-w-3xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
               Turn messy business data into clear insights
             </h1>
-            <p className="mt-6 max-w-2xl text-lg text-slate-300">
+            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
               Upload CSV or Excel files, clean inconsistent business records, store them in Neon PostgreSQL, and review dashboards plus rule-based insights in a polished demo flow.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
@@ -143,8 +145,8 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-teal-400/15 via-white/5 to-amber-400/10 p-6">
-            <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-6">
+          <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-teal-400/15 via-white/5 to-amber-400/10 p-4 sm:p-6">
+            <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-5 sm:p-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <article className="rounded-2xl bg-white/5 p-4">
                   <p className="text-sm text-slate-400">Cleaned Rows</p>
@@ -161,8 +163,9 @@ export function HomePage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
+      </ScrollReveal>
 
       <section className="mt-16">
         <PageHeader
@@ -171,59 +174,68 @@ export function HomePage() {
           description="InsightFlow stays intentionally small: upload, clean, analyze, and present a clear dashboard without overbuilding the product."
         />
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {features.map((feature) => (
-            <Card key={feature.title} className="group flex h-full flex-col overflow-hidden p-0">
-              <div className={`bg-gradient-to-br ${feature.accent} p-5`}>
-                <FeatureVisual type={feature.visual} />
-              </div>
-              <div className="flex flex-1 flex-col p-6">
-                <div className="mb-4 h-11 w-11 rounded-2xl bg-teal-500/10 ring-1 ring-teal-400/10 transition group-hover:scale-105 group-hover:bg-teal-500/15" />
-              <h2 className="mt-5 text-xl font-bold text-white">{feature.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{feature.description}</p>
-              </div>
-            </Card>
+        <div className="mt-8 grid gap-6 lg:grid-cols-2 2xl:grid-cols-4">
+          {features.map((feature, index) => (
+            <ScrollReveal key={feature.title} delay={index * 90}>
+              <Card className="group flex h-full min-h-[27rem] flex-col overflow-hidden p-0">
+                <div className={`bg-gradient-to-br ${feature.accent} p-4 sm:p-5`}>
+                  <FeatureVisual type={feature.visual} />
+                </div>
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                  <h2 className="text-2xl font-bold text-white sm:text-[1.7rem]">{feature.title}</h2>
+                  <p className="mt-3 max-w-md text-sm leading-7 text-slate-300 sm:text-[15px]">
+                    {feature.description}
+                  </p>
+                  <div className="mt-auto pt-5 text-xs font-semibold uppercase tracking-[0.24em] text-teal-300/90">
+                    Focused workflow
+                  </div>
+                </div>
+              </Card>
+            </ScrollReveal>
           ))}
         </div>
       </section>
 
       <section className="mt-16 pb-8">
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <Card className="overflow-hidden p-8">
-            <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <ScrollReveal>
+            <Card className="overflow-hidden p-5 sm:p-8">
+              <div className="grid gap-8 xl:grid-cols-[0.82fr_1.18fr] xl:items-center">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">What Happens Next</p>
-                <h2 className="mt-3 text-3xl font-extrabold text-white">From file upload to a client-ready business readout</h2>
-                <p className="mt-4 text-base leading-7 text-slate-300">
+                <h2 className="mt-3 max-w-xl text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+                  From file upload to a client-ready business readout
+                </h2>
+                <p className="mt-4 max-w-lg text-base leading-8 text-slate-300">
                   InsightFlow is built for the moment right after a spreadsheet lands in your inbox. Upload the file, clean the messy fields, inspect the repaired rows, and move into a dashboard that feels presentation-ready.
                 </p>
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Step</p>
-                    <p className="mt-2 text-lg font-bold text-white">Inspect</p>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <div className="min-w-[9rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Step 1</p>
+                    <p className="mt-2 text-xl font-bold text-white">Inspect</p>
                   </div>
-                  <div className="rounded-2xl bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Step</p>
-                    <p className="mt-2 text-lg font-bold text-white">Analyze</p>
+                  <div className="min-w-[9rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Step 2</p>
+                    <p className="mt-2 text-xl font-bold text-white">Analyze</p>
                   </div>
-                  <div className="rounded-2xl bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Step</p>
-                    <p className="mt-2 text-lg font-bold text-white">Share</p>
+                  <div className="min-w-[9rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Step 3</p>
+                    <p className="mt-2 text-xl font-bold text-white">Share</p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-5">
+              <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-4 sm:p-5">
                 <div className="grid gap-4">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Dataset snapshot</p>
-                        <p className="mt-2 text-xl font-bold text-white">Quarterly Services Pipeline</p>
+                        <p className="mt-2 text-xl font-bold text-white sm:text-[1.7rem]">Quarterly Services Pipeline</p>
                       </div>
-                      <span className="rounded-full bg-teal-500/15 px-3 py-1 text-xs font-semibold text-teal-200">Ready</span>
+                      <span className="self-start rounded-full bg-teal-500/15 px-3 py-1 text-xs font-semibold text-teal-200">Ready</span>
                     </div>
-                    <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div className="mt-4 grid gap-3 grid-cols-3">
                       <div className="rounded-xl bg-white/5 p-3">
                         <p className="text-xs text-slate-400">Revenue</p>
                         <p className="mt-2 text-lg font-bold text-emerald-300">$128k</p>
@@ -239,7 +251,7 @@ export function HomePage() {
                     </div>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="flex items-end gap-3">
+                    <div className="grid gap-4 lg:grid-cols-[1fr_0.95fr] lg:items-end">
                       <div className="flex-1">
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Revenue trend</p>
                         <div className="mt-4 flex h-28 items-end gap-2">
@@ -250,7 +262,7 @@ export function HomePage() {
                           <div className="h-28 flex-1 rounded-t-xl bg-emerald-400/80" />
                         </div>
                       </div>
-                      <div className="w-40 rounded-2xl bg-teal-500/10 p-4">
+                      <div className="rounded-2xl bg-teal-500/10 p-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-teal-200">Insight</p>
                         <p className="mt-3 text-sm leading-6 text-slate-200">Two projects are over budget, but overall margin still looks healthy.</p>
                       </div>
@@ -258,33 +270,38 @@ export function HomePage() {
                   </div>
                 </div>
               </div>
-            </div>
-          </Card>
+              </div>
+            </Card>
+          </ScrollReveal>
 
-          <Card className="p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">Why It Feels Useful</p>
-            <h2 className="mt-3 text-3xl font-extrabold text-white">A small product surface with strong presentation value</h2>
-            <div className="mt-6 grid gap-4">
-              <article className="rounded-2xl bg-white/5 p-5">
-                <p className="text-sm font-semibold text-white">Professional upload review</p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Review raw rows, cleaned rows, warnings, and a summary in one controlled modal instead of a cluttered page.
-                </p>
-              </article>
-              <article className="rounded-2xl bg-white/5 p-5">
-                <p className="text-sm font-semibold text-white">Private dataset history</p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Keep uploads scoped to the signed-in user and reopen dashboards without exposing internal storage details.
-                </p>
-              </article>
-              <article className="rounded-2xl bg-white/5 p-5">
-                <p className="text-sm font-semibold text-white">Analysis that reads cleanly</p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Financial charts, status breakdowns, and rule-based insights make the app feel like a focused analytics product instead of a database viewer.
-                </p>
-              </article>
-            </div>
-          </Card>
+          <ScrollReveal delay={120}>
+            <Card className="p-5 sm:p-8">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">Why It Feels Useful</p>
+              <h2 className="mt-3 max-w-2xl text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+                A small product surface with strong presentation value
+              </h2>
+              <div className="mt-6 grid gap-4">
+                <article className="rounded-2xl bg-white/5 p-5">
+                  <p className="text-base font-semibold text-white">Professional upload review</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                    Review raw rows, cleaned rows, warnings, and a summary in one controlled modal instead of a cluttered page.
+                  </p>
+                </article>
+                <article className="rounded-2xl bg-white/5 p-5">
+                  <p className="text-base font-semibold text-white">Private dataset history</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                    Keep uploads scoped to the signed-in user and reopen dashboards without exposing internal storage details.
+                  </p>
+                </article>
+                <article className="rounded-2xl bg-white/5 p-5">
+                  <p className="text-base font-semibold text-white">Analysis that reads cleanly</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                    Financial charts, status breakdowns, and rule-based insights make the app feel like a focused analytics product instead of a database viewer.
+                  </p>
+                </article>
+              </div>
+            </Card>
+          </ScrollReveal>
         </div>
       </section>
     </div>

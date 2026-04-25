@@ -11,6 +11,16 @@ const COLUMN_ALIASES = {
   date: ['date', 'start_date', 'invoice_date'],
 };
 
+export const STANDARD_FIELD_LABELS = {
+  projectName: 'Project',
+  clientName: 'Client',
+  revenue: 'Revenue',
+  cost: 'Cost',
+  budget: 'Budget',
+  status: 'Status',
+  date: 'Date',
+};
+
 const STATUS_MAP = new Map([
   ['done', 'Completed'],
   ['completed', 'Completed'],
@@ -38,7 +48,7 @@ const canonicalFields = new Set(Object.keys(COLUMN_ALIASES));
 
 const pluralize = (count, singular, plural = `${singular}s`) => (count === 1 ? singular : plural);
 
-const resolveCanonicalField = (key) => {
+export const resolveCanonicalField = (key) => {
   const normalized = toSnakeCase(key);
 
   for (const [canonical, aliases] of Object.entries(COLUMN_ALIASES)) {
@@ -48,6 +58,44 @@ const resolveCanonicalField = (key) => {
   }
 
   return normalized;
+};
+
+const buildColumnMapping = (headers = []) => {
+  const mapped = [];
+  const ignored = [];
+  const matchedCanonicalFields = new Set();
+
+  headers.forEach((header, index) => {
+    const original = header?.original ?? `Column ${index + 1}`;
+    const normalized = header?.normalized ?? toSnakeCase(original) || `column_${index + 1}`;
+    const canonicalField = resolveCanonicalField(normalized);
+
+    if (canonicalFields.has(canonicalField)) {
+      matchedCanonicalFields.add(canonicalField);
+      mapped.push({
+        original,
+        normalized,
+        mappedTo: STANDARD_FIELD_LABELS[canonicalField],
+        canonicalField,
+      });
+      return;
+    }
+
+    ignored.push({
+      original,
+      normalized,
+    });
+  });
+
+  const missing = Object.entries(STANDARD_FIELD_LABELS)
+    .filter(([canonicalField]) => !matchedCanonicalFields.has(canonicalField))
+    .map(([, label]) => label);
+
+  return {
+    mapped,
+    ignored,
+    missing,
+  };
 };
 
 const normalizeDateValue = (value) => {
@@ -105,7 +153,7 @@ const buildDuplicateKey = (row) =>
     row.date || null,
   ]);
 
-export const cleanRows = (rows = []) => {
+export const cleanRows = (rows = [], headers = []) => {
   const warnings = [];
   const duplicateTracker = new Set();
   const cleanedRows = [];
@@ -219,6 +267,7 @@ export const cleanRows = (rows = []) => {
       missingValuesFixed,
       invalidDates,
       discoveredCanonicalFields,
+      columnMapping: buildColumnMapping(headers),
     },
   };
 };

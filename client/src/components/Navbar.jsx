@@ -24,25 +24,25 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-        <Link to="/" className="flex min-w-0 items-center gap-3">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <Link to="/" className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-600/20 ring-1 ring-teal-400/20">
             <span className="text-sm font-extrabold text-teal-300">IF</span>
           </div>
           <div className="min-w-0">
             <p className="truncate text-base font-extrabold tracking-tight text-white">InsightFlow</p>
-            <p className="truncate text-xs text-slate-400">Portfolio analytics demo</p>
+            <p className="truncate text-xs text-slate-400">Business analytics demo</p>
           </div>
         </Link>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <nav className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1">
+        <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center">
+          <nav className="flex w-full flex-wrap items-center justify-center gap-2 rounded-[1.25rem] border border-white/10 bg-white/5 p-1 sm:w-auto sm:justify-start">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  `rounded-full px-3 py-2 text-sm font-semibold transition sm:px-4 ${
                     isActive ? 'bg-teal-500 text-slate-950' : 'text-slate-300 hover:bg-white/10'
                   }`
                 }
@@ -53,30 +53,30 @@ export function Navbar() {
           </nav>
 
           {isAuthenticated ? (
-            <div className="relative">
+            <div className="relative self-end lg:self-auto">
               <button
                 type="button"
                 onClick={() => setIsMenuOpen((current) => !current)}
-                className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-left"
+                className="flex w-full items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:border-teal-400/20 hover:bg-white/10 sm:w-auto"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-500/20 text-sm font-bold text-teal-300">
                   {initials || 'U'}
                 </div>
-                <div className="hidden sm:block">
+                <div className="hidden min-w-0 sm:block">
                   <p className="text-sm font-semibold text-white">{user.name}</p>
-                  <p className="text-xs text-slate-400">{user.email}</p>
+                  <p className="max-w-[10rem] truncate text-xs text-slate-400">{user.email}</p>
                 </div>
               </button>
 
               {isMenuOpen ? (
-                <div className="absolute right-0 mt-3 w-64 rounded-2xl border border-white/10 bg-slate-900 p-3 shadow-2xl shadow-slate-950/40">
+                <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-white/10 bg-slate-900 p-3 shadow-2xl shadow-slate-950/40">
                   <div className="rounded-xl bg-white/5 p-3">
                     <p className="text-sm font-semibold text-white">{user.name}</p>
                     <p className="text-xs text-slate-400">{user.email}</p>
                   </div>
                   <Button
                     variant="ghost"
-                    className="mt-3 w-full justify-start"
+                    className="mt-3 w-full justify-start rounded-xl px-3 py-3 hover:bg-white/10"
                     onClick={async () => {
                       await logout();
                       toast.success('Logged out successfully');
@@ -90,7 +90,7 @@ export function Navbar() {
               ) : null}
             </div>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex justify-end gap-2">
               <Button as={Link} to="/login" variant="secondary">Login</Button>
               <Button as={Link} to="/register">Register</Button>
             </div>

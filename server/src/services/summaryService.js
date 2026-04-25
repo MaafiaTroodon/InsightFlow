@@ -1,6 +1,14 @@
 import { decimalToNumber } from '../utils/formatters.js';
 
 const round = (value, digits = 2) => Number(Number(value || 0).toFixed(digits));
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+
+const formatPercent = (value) => `${(Number(value || 0) * 100).toFixed(2)}%`;
 
 const toNumericRow = (row) => ({
   projectName: row.projectName,
@@ -81,4 +89,27 @@ export const buildChartData = (rows = []) => {
       marginPercent: row.marginPercent,
     })),
   };
+};
+
+export const buildExecutiveSummary = ({ dataset, rows = [], summary }) => {
+  const normalizedRows = sanitizeRowsForDisplay(rows);
+
+  const highestRevenueProject = normalizedRows.reduce(
+    (best, row) => (best === null || row.revenue > best.revenue ? row : best),
+    null
+  );
+
+  const lowestMarginProject = normalizedRows.reduce(
+    (best, row) => (best === null || row.margin < best.margin ? row : best),
+    null
+  );
+
+  return [
+    `This dataset contains ${dataset.rowCount} cleaned business records from ${dataset.originalFileName}.`,
+    `Total revenue is ${formatCurrency(summary.totalRevenue)} with ${formatCurrency(summary.totalProfit)} in profit, giving an average margin of ${formatPercent(summary.averageMargin)}.`,
+    `${summary.overBudgetCount} projects are over budget and ${summary.negativeProfitCount} projects have negative profit.`,
+    highestRevenueProject && lowestMarginProject
+      ? `${highestRevenueProject.projectName} generated the highest revenue, while ${lowestMarginProject.projectName} has the lowest margin.`
+      : 'Revenue, cost, and margin trends were calculated from the cleaned business-ready rows.',
+  ];
 };

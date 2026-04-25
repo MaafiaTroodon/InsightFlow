@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { parseUploadedFile } from '../services/parserService.js';
 import { cleanRows } from '../services/cleaningService.js';
 import { buildInsights } from '../services/insightService.js';
-import { buildSummary, sanitizeRowsForDisplay } from '../services/summaryService.js';
+import { buildExecutiveSummary, buildSummary, sanitizeRowsForDisplay } from '../services/summaryService.js';
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ const createDatasetName = (filename) => {
 router.post('/upload', requireAuth, upload.single('file'), async (req, res, next) => {
   try {
     const parsed = parseUploadedFile(req.file);
-    const cleaned = cleanRows(parsed.rows);
+    const cleaned = cleanRows(parsed.rows, parsed.headers);
     const warnings = [...parsed.warnings, ...cleaned.warnings];
 
     const dataset = await prisma.dataset.create({
@@ -38,6 +38,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res, next
         rowCount: cleaned.cleanedRows.length,
         duplicateRowsRemoved: cleaned.stats.duplicateRowsRemoved,
         missingValuesFixed: cleaned.stats.missingValuesFixed,
+        columnMapping: cleaned.stats.columnMapping,
         warnings,
         rows: {
           create: cleaned.cleanedRows.map((row) => ({
@@ -72,6 +73,11 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res, next
       duplicateRowsRemoved: cleaned.stats.duplicateRowsRemoved,
       missingValuesFixed: cleaned.stats.missingValuesFixed,
     });
+    const executiveSummary = buildExecutiveSummary({
+      dataset,
+      rows: dataset.rows,
+      summary,
+    });
 
     res.status(201).json({
       datasetId: dataset.id,
@@ -86,6 +92,8 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res, next
       warnings,
       summary,
       insights,
+      executiveSummary,
+      columnMapping: cleaned.stats.columnMapping,
       uploadedAt: dataset.createdAt,
     });
   } catch (error) {
