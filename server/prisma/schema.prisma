@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dataset {
+  id               String        @id @default(cuid())
+  name             String
+  originalFileName String
+  rowCount         Int
+  createdAt        DateTime      @default(now())
+  rows             BusinessRow[]
+}
+
+model BusinessRow {
+  id           String   @id @default(cuid())
+  datasetId    String
+  projectName  String
+  clientName   String?
+  status       String?
+  date         DateTime?
+  revenue      Decimal  @db.Decimal(18, 2)
+  cost         Decimal  @db.Decimal(18, 2)
+  budget       Decimal? @db.Decimal(18, 2)
+  profit       Decimal  @db.Decimal(18, 2)
+  margin       Decimal  @db.Decimal(7, 4)
+  isOverBudget Boolean  @default(false)
+  rawJson      Json
+  createdAt    DateTime @default(now())
+  dataset      Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([datasetId])
+}
