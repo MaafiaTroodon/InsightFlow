@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 const COOKIE_NAME = 'insightflow_token';
 
 const getJwtSecret = () => process.env.JWT_SECRET || 'development-secret';
+const isProduction = process.env.NODE_ENV === 'production';
 
 export const authCookieName = COOKIE_NAME;
 
@@ -21,8 +22,8 @@ export const verifyAuthToken = (token) => jwt.verify(token, getJwtSecret());
 
 export const getCookieOptions = () => ({
   httpOnly: true,
-  sameSite: 'lax',
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: isProduction ? 'none' : 'lax',
+  secure: isProduction,
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 });
