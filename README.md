@@ -1,10 +1,11 @@
 # InsightFlow
 
-InsightFlow is a portfolio-ready full-stack business data analysis app. It accepts CSV and Excel uploads, cleans inconsistent business records, stores the cleaned dataset in Neon PostgreSQL, and generates a polished dashboard with charts and rule-based insights.
+InsightFlow is a portfolio-ready full-stack business data analysis app. It supports account registration and login, isolates datasets per user, accepts CSV and Excel uploads, cleans inconsistent business records, stores the cleaned dataset in Neon PostgreSQL, and generates polished dashboards with charts and rule-based insights.
 
 ## Features
 
 - Upload `.csv`, `.xlsx`, and `.xls` files
+- Register, login, logout, and per-user dataset isolation
 - Parse CSV rows and Excel first-sheet data into one common JSON shape
 - Clean messy business data safely without crashing on bad input
 - Remove duplicate rows and standardize flexible column names
@@ -12,12 +13,12 @@ InsightFlow is a portfolio-ready full-stack business data analysis app. It accep
 - Auto-calculate `profit`, `margin`, and over-budget project flags
 - Persist datasets and cleaned rows with Prisma + Neon PostgreSQL
 - Show summary cards, charts, cleaned table previews, and rule-based insights
-- Browse upload history and delete datasets
+- Browse private upload history, preview cleaned data in a modal, and delete datasets
 
 ## Tech Stack
 
 - Frontend: React, Vite, Tailwind CSS, Recharts
-- Backend: Node.js, Express, Multer
+- Backend: Node.js, Express, Multer, JWT cookie auth
 - Database: Neon PostgreSQL
 - ORM: Prisma
 - File parsing: `csv-parse` and `xlsx`
@@ -63,7 +64,9 @@ Server `.env` example:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
-PORT=5001
+JWT_SECRET="replace-with-a-long-random-secret"
+PORT=5000
+CLIENT_URL="http://localhost:4000"
 ```
 
 Neon PostgreSQL connection strings should be placed in `server/.env` as `DATABASE_URL`.
@@ -71,7 +74,7 @@ Neon PostgreSQL connection strings should be placed in `server/.env` as `DATABAS
 Client `.env` example:
 
 ```env
-VITE_API_URL="http://localhost:5001/api"
+VITE_API_URL="http://localhost:5000/api"
 ```
 
 ## Local Setup
@@ -93,7 +96,7 @@ cd server
 cp .env.example .env
 ```
 
-Set your Neon connection string in `server/.env`.
+Set your Neon connection string in `server/.env` and add a `JWT_SECRET` for signed auth cookies.
 
 ### 3. Generate Prisma client and run migrations
 
@@ -103,6 +106,8 @@ npx prisma generate
 npx prisma migrate dev --name init
 ```
 
+If you are applying this upgrade over an existing schema, run `npx prisma db push` or a migration after updating the `User` and `Dataset` models so per-user ownership fields are created.
+
 ### 4. Run the backend
 
 ```bash
@@ -110,7 +115,7 @@ cd server
 npm run dev
 ```
 
-The API will run on `http://localhost:5000`.
+The API runs on the `PORT` configured in `server/.env`.
 
 ### 5. Run the frontend
 
@@ -119,7 +124,15 @@ cd client
 npm run dev
 ```
 
-The Vite app will run on `http://localhost:5173`.
+The Vite app runs on `http://localhost:4000`.
+
+## Authentication Flow
+
+- Register at `/register`
+- Login at `/login`
+- InsightFlow stores the session in an HTTP-only JWT cookie
+- Protected routes: `/upload`, `/history`, `/dashboard/:id`
+- Each dataset belongs to exactly one user and server-side dataset queries filter by the authenticated user id
 
 ## Sample CSV Format
 
@@ -158,9 +171,10 @@ Flexible input headers are supported. The backend maps common alternatives like:
 ## Main Pages
 
 - Home: hero section, CTA, and feature cards
-- Upload: drag-and-drop upload, progress state, raw preview, cleaned preview
+- Login/Register: centered auth forms with toast-driven feedback
+- Upload: drag-and-drop upload, status timeline, success card, cleaned-data modal, dashboard CTA
 - Dashboard: summary cards, charts, cleaned data table, insights
-- History: list of previous datasets with reopen/delete actions
+- History: current user datasets only, modal data preview, reopen/delete actions
 - Architecture: system pipeline and architecture diagram
 
 ## Demo Walkthrough
@@ -168,14 +182,27 @@ Flexible input headers are supported. The backend maps common alternatives like:
 For a LinkedIn post, portfolio, or interview demo:
 
 1. Open the home page and explain the problem: messy spreadsheet data is hard to analyze quickly.
-2. Upload `sample-business-data.csv`.
-3. Show the raw preview versus cleaned preview.
-4. Open the dashboard and point out the calculated totals, over-budget flags, and charts.
-5. Highlight the rule-based insights panel to show how the app turns raw uploads into clear business takeaways.
-6. Open the history page to demonstrate persistence and dataset deletion.
+2. Register a new account and sign in.
+3. Upload `sample-business-data.csv`.
+4. Use the success card and "View Cleaned Data" modal to show raw rows, cleaned rows, warnings, and summary metrics.
+5. Open the dashboard and point out the calculated totals, over-budget flags, and charts.
+6. Open the history page to demonstrate per-user persistence and dataset deletion.
+7. Log out and log in as a different user to show that datasets are isolated per account.
+
+## Upload Flow
+
+1. Select a CSV, XLSX, or XLS file
+2. InsightFlow parses the rows, cleans business fields, and stores the dataset for the logged-in user
+3. A success toast and result card appear on `/upload`
+4. Users can open a cleaned-data modal or continue to dashboard analysis
+
+## Per-User Isolation
+
+- Every dataset is stored with a `userId`
+- `/api/upload`, `/api/datasets`, `/api/datasets/:id`, and `DELETE /api/datasets/:id` require authentication
+- Backend ownership checks prevent one user from reading or deleting another user’s data
 
 ## Notes
 
-- No authentication is included
 - No paid AI APIs are used
 - The app is intentionally small, polished, and demo-focused rather than SaaS-heavy

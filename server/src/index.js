@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import authRouter from './routes/auth.js';
 import uploadRouter from './routes/upload.js';
 import datasetsRouter from './routes/datasets.js';
 
@@ -11,16 +13,18 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: true,
-    credentials: false,
+    origin: process.env.CLIENT_URL || 'http://localhost:4000',
+    credentials: true,
   })
 );
+app.use(cookieParser());
 app.use(express.json());
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.use('/api', authRouter);
 app.use('/api', uploadRouter);
 app.use('/api', datasetsRouter);
 

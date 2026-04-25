@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteDataset, fetchDatasets } from '../api/datasets.js';
+import toast from 'react-hot-toast';
+import { deleteDataset, fetchDatasetById, fetchDatasets } from '../api/datasets.js';
 import { Button } from '../components/Button.jsx';
 import { Card } from '../components/Card.jsx';
+import { ConfirmModal } from '../components/ConfirmModal.jsx';
+import { DatasetPreviewModal } from '../components/DatasetPreviewModal.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
 import { LoadingState } from '../components/LoadingState.jsx';
 import { PageHeader } from '../components/PageHeader.jsx';
@@ -12,6 +15,8 @@ export function HistoryPage() {
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedDataset, setSelectedDataset] = useState(null);
+  const [datasetToDelete, setDatasetToDelete] = useState(null);
 
   const loadHistory = async () => {
     try {
@@ -21,6 +26,7 @@ export function HistoryPage() {
       setDatasets(response);
     } catch (loadError) {
       setError(loadError.message);
+      toast.error('Could not load history');
     } finally {
       setLoading(false);
     }
@@ -30,16 +36,28 @@ export function HistoryPage() {
     loadHistory();
   }, []);
 
-  const handleDelete = async (datasetId) => {
+  const handleDelete = async () => {
+    if (!datasetToDelete) {
+      return;
+    }
+
     try {
-      const shouldDelete = window.confirm('Delete this dataset and its cleaned rows?');
-      if (!shouldDelete) {
-        return;
-      }
-      await deleteDataset(datasetId);
-      setDatasets((current) => current.filter((item) => item.id !== datasetId));
+      await deleteDataset(datasetToDelete.id);
+      setDatasets((current) => current.filter((item) => item.id !== datasetToDelete.id));
+      setDatasetToDelete(null);
+      toast.success('Dataset deleted successfully');
     } catch (deleteError) {
       setError(deleteError.message);
+      toast.error('Delete error');
+    }
+  };
+
+  const handleOpenPreview = async (datasetId) => {
+    try {
+      const response = await fetchDatasetById(datasetId);
+      setSelectedDataset(response);
+    } catch (previewError) {
+      toast.error(previewError.message);
     }
   };
 
@@ -47,13 +65,13 @@ export function HistoryPage() {
     <div className="mx-auto max-w-7xl px-6">
       <PageHeader
         eyebrow="History"
-        title="Previous uploads"
-        description="Review past business datasets, reopen dashboards, or remove demo data you no longer need."
+        title="Your datasets"
+        description="Review your private uploads, inspect cleaned data, reopen dashboards, or remove datasets you no longer need."
       />
 
       {loading ? (
         <div className="mt-8">
-          <LoadingState title="Loading history" description="Fetching saved datasets and summary metrics." />
+          <LoadingState title="Loading history" description="Fetching your saved datasets and summary metrics." />
         </div>
       ) : error ? (
         <div className="mt-8">
@@ -62,8 +80,8 @@ export function HistoryPage() {
       ) : datasets.length === 0 ? (
         <div className="mt-8">
           <EmptyState
-            title="No uploads yet"
-            description="Upload your first dataset to populate the history page and generate dashboards."
+            title="No datasets yet"
+            description="Upload your first file to populate your private history."
           />
         </div>
       ) : (
@@ -74,7 +92,7 @@ export function HistoryPage() {
                 <div>
                   <h2 className="text-2xl font-extrabold text-white">{dataset.name}</h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    {dataset.originalFileName} • Uploaded {formatDate(dataset.createdAt)} • {dataset.rowCount} rows
+                    {dataset.originalFileName} • Uploaded {formatDate(dataset.createdAt)} • {dataset.rowCount} cleaned rows
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3 text-sm">
                     <div className="rounded-full bg-white/5 px-4 py-2 text-slate-300">
@@ -87,14 +105,34 @@ export function HistoryPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <Button as={Link} to={`/dashboard/${dataset.id}`}>View Dashboard</Button>
-                  <Button type="button" variant="danger" onClick={() => handleDelete(dataset.id)}>Delete</Button>
+                  <Button variant="secondary" onClick={() => handleOpenPreview(dataset.id)}>View Data</Button>
+                  <Button as={Link} to={`/dashboard/${dataset.id}`}>Open Dashboard</Button>
+                  <Button type="button" variant="danger" onClick={() => setDatasetToDelete(dataset)}>Delete</Button>
                 </div>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      <DatasetPreviewModal
+        isOpen={Boolean(selectedDataset)}
+        onClose={() => setSelectedDataset(null)}
+        dataset={selectedDataset?.dataset}
+        rawRows={selectedDataset?.rawPreview || []}
+        cleanedRows={selectedDataset?.cleanedPreview || selectedDataset?.rows || []}
+        warnings={selectedDataset?.warnings || []}
+        summary={selectedDataset?.summary}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(datasetToDelete)}
+        onClose={() => setDatasetToDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete dataset"
+        description={`Delete ${datasetToDelete?.name || 'this dataset'} and its cleaned rows? This action cannot be undone.`}
+        confirmLabel="Delete dataset"
+      />
     </div>
   );
 }

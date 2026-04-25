@@ -1,13 +1,32 @@
 import express from 'express';
 import { prisma } from '../utils/prisma.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 import { buildInsights } from '../services/insightService.js';
 import { buildChartData, buildSummary, sanitizeRowsForDisplay } from '../services/summaryService.js';
 
 const router = express.Router();
 
-router.get('/datasets', async (_req, res, next) => {
+const getOwnedDataset = async (datasetId, userId) =>
+  prisma.dataset.findFirst({
+    where: {
+      id: datasetId,
+      userId,
+    },
+    include: {
+      rows: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  });
+
+router.get('/datasets', requireAuth, async (req, res, next) => {
   try {
     const datasets = await prisma.dataset.findMany({
+      where: {
+        userId: req.user.id,
+      },
       include: {
         rows: {
           orderBy: {
@@ -27,7 +46,11 @@ router.get('/datasets', async (_req, res, next) => {
         id: dataset.id,
         name: dataset.name,
         originalFileName: dataset.originalFileName,
+        rawRowCount: dataset.rawRowCount,
+        fileType: dataset.fileType,
         rowCount: dataset.rowCount,
+        duplicateRowsRemoved: dataset.duplicateRowsRemoved,
+        missingValuesFixed: dataset.missingValuesFixed,
         createdAt: dataset.createdAt,
         summary,
       };
@@ -39,20 +62,9 @@ router.get('/datasets', async (_req, res, next) => {
   }
 });
 
-router.get('/datasets/:id', async (req, res, next) => {
+router.get('/datasets/:id', requireAuth, async (req, res, next) => {
   try {
-    const dataset = await prisma.dataset.findUnique({
-      where: {
-        id: req.params.id,
-      },
-      include: {
-        rows: {
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
-      },
-    });
+    const dataset = await getOwnedDataset(req.params.id, req.user.id);
 
     if (!dataset) {
       return res.status(404).json({ message: 'Dataset not found.' });
@@ -66,7 +78,11 @@ router.get('/datasets/:id', async (req, res, next) => {
         id: dataset.id,
         name: dataset.name,
         originalFileName: dataset.originalFileName,
+        fileType: dataset.fileType,
+        rawRowCount: dataset.rawRowCount,
         rowCount: dataset.rowCount,
+        duplicateRowsRemoved: dataset.duplicateRowsRemoved,
+        missingValuesFixed: dataset.missingValuesFixed,
         createdAt: dataset.createdAt,
       },
       rows,
@@ -75,18 +91,24 @@ router.get('/datasets/:id', async (req, res, next) => {
       insights: buildInsights({
         rows: dataset.rows,
         summary,
+        duplicateRowsRemoved: dataset.duplicateRowsRemoved,
+        missingValuesFixed: dataset.missingValuesFixed,
       }),
+      rawPreview: dataset.rows.slice(0, 10).map((row) => row.rawJson).filter(Boolean),
+      cleanedPreview: rows.slice(0, 10),
+      warnings: Array.isArray(dataset.warnings) ? dataset.warnings : [],
     });
   } catch (error) {
     next(error);
   }
 });
 
-router.delete('/datasets/:id', async (req, res, next) => {
+router.delete('/datasets/:id', requireAuth, async (req, res, next) => {
   try {
-    const existingDataset = await prisma.dataset.findUnique({
+    const existingDataset = await prisma.dataset.findFirst({
       where: {
         id: req.params.id,
+        userId: req.user.id,
       },
     });
 

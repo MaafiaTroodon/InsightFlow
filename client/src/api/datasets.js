@@ -1,14 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
-
-const parseResponse = async (response) => {
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(payload.message || 'Request failed.');
-  }
-
-  return payload;
-};
+import { API_BASE, apiFetch, parseResponse } from './http.js';
 
 export const uploadDataset = async (file, onProgress) => {
   const formData = new FormData();
@@ -17,6 +7,7 @@ export const uploadDataset = async (file, onProgress) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_BASE}/upload`);
+    xhr.withCredentials = true;
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && typeof onProgress === 'function') {
@@ -42,18 +33,17 @@ export const uploadDataset = async (file, onProgress) => {
 };
 
 export const fetchDatasets = async () => {
-  const response = await fetch(`${API_BASE}/datasets`);
-  return parseResponse(response);
+  return apiFetch('/datasets');
 };
 
 export const fetchDatasetById = async (id) => {
-  const response = await fetch(`${API_BASE}/datasets/${id}`);
-  return parseResponse(response);
+  return apiFetch(`/datasets/${id}`);
 };
 
 export const deleteDataset = async (id) => {
   const response = await fetch(`${API_BASE}/datasets/${id}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
 
   if (!response.ok && response.status !== 204) {

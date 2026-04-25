@@ -8,12 +8,30 @@ datasource db {
 }
 
 model Dataset {
-  id               String        @id @default(cuid())
-  name             String
-  originalFileName String
-  rowCount         Int
-  createdAt        DateTime      @default(now())
-  rows             BusinessRow[]
+  id                   String        @id @default(cuid())
+  userId               String?
+  name                 String
+  originalFileName     String
+  fileType             String?
+  rawRowCount          Int?
+  rowCount             Int
+  duplicateRowsRemoved Int           @default(0)
+  missingValuesFixed   Int           @default(0)
+  warnings             Json?
+  createdAt            DateTime      @default(now())
+  user                 User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rows                 BusinessRow[]
+
+  @@index([userId])
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  datasets     Dataset[]
 }
 
 model BusinessRow {
