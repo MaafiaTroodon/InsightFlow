@@ -3,7 +3,7 @@ import XLSX from 'xlsx';
 import { parse as parseCsv } from 'csv-parse/sync';
 import { toSnakeCase } from '../utils/formatters.js';
 
-const CSV_MIME_TYPES = ['text/csv', 'application/vnd.ms-excel'];
+const CSV_MIME_TYPES = ['text/csv'];
 const EXCEL_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel.sheet.macroenabled.12',

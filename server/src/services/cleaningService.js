@@ -36,6 +36,8 @@ const DATE_FORMATS = [
 
 const canonicalFields = new Set(Object.keys(COLUMN_ALIASES));
 
+const pluralize = (count, singular, plural = `${singular}s`) => (count === 1 ? singular : plural);
+
 const resolveCanonicalField = (key) => {
   const normalized = toSnakeCase(key);
 
@@ -168,15 +170,27 @@ export const cleanRows = (rows = []) => {
   });
 
   if (duplicatesRemoved > 0) {
-    warnings.push(`${duplicatesRemoved} exact duplicate row${duplicatesRemoved === 1 ? '' : 's'} were removed.`);
+    warnings.push(
+      `${duplicatesRemoved} exact duplicate ${pluralize(duplicatesRemoved, 'row')} ${
+        duplicatesRemoved === 1 ? 'was' : 'were'
+      } removed.`
+    );
   }
 
   if (invalidDates > 0) {
-    warnings.push(`${invalidDates} date value${invalidDates === 1 ? '' : 's'} could not be parsed and were set to null.`);
+    warnings.push(
+      `${invalidDates} date ${pluralize(invalidDates, 'value')} could not be parsed and ${
+        invalidDates === 1 ? 'was' : 'were'
+      } set to null.`
+    );
   }
 
   if (missingValuesFixed > 0) {
-    warnings.push(`${missingValuesFixed} missing value${missingValuesFixed === 1 ? '' : 's'} were filled with defaults or generated labels.`);
+    warnings.push(
+      `${missingValuesFixed} missing ${pluralize(missingValuesFixed, 'value')} ${
+        missingValuesFixed === 1 ? 'was' : 'were'
+      } filled with defaults or generated labels.`
+    );
   }
 
   const discoveredCanonicalFields = Array.from(
