@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deleteDataset, fetchDatasets } from '../api/datasets.js';
+import { Button } from '../components/Button.jsx';
+import { Card } from '../components/Card.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
-import { SectionHeader } from '../components/SectionHeader.jsx';
+import { LoadingState } from '../components/LoadingState.jsx';
+import { PageHeader } from '../components/PageHeader.jsx';
 import { formatCurrency, formatDate } from '../utils/formatters.js';
 
 export function HistoryPage() {
@@ -29,6 +32,10 @@ export function HistoryPage() {
 
   const handleDelete = async (datasetId) => {
     try {
+      const shouldDelete = window.confirm('Delete this dataset and its cleaned rows?');
+      if (!shouldDelete) {
+        return;
+      }
       await deleteDataset(datasetId);
       setDatasets((current) => current.filter((item) => item.id !== datasetId));
     } catch (deleteError) {
@@ -37,17 +44,17 @@ export function HistoryPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-16">
-      <SectionHeader
+    <div className="mx-auto max-w-7xl px-6">
+      <PageHeader
         eyebrow="History"
         title="Previous uploads"
         description="Review past business datasets, reopen dashboards, or remove demo data you no longer need."
       />
 
       {loading ? (
-        <section className="mt-8 rounded-[2rem] border border-white/10 bg-slate-900/70 p-10 text-center text-slate-300">
-          Loading history...
-        </section>
+        <div className="mt-8">
+          <LoadingState title="Loading history" description="Fetching saved datasets and summary metrics." />
+        </div>
       ) : error ? (
         <div className="mt-8">
           <EmptyState title="History unavailable" description={error} />
@@ -62,12 +69,12 @@ export function HistoryPage() {
       ) : (
         <div className="mt-8 grid gap-5">
           {datasets.map((dataset) => (
-            <article key={dataset.id} className="rounded-[1.75rem] border border-white/10 bg-slate-900/70 p-6">
+            <Card key={dataset.id} className="p-6">
               <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
                   <h2 className="text-2xl font-extrabold text-white">{dataset.name}</h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    Uploaded {formatDate(dataset.createdAt)} • {dataset.rowCount} rows
+                    {dataset.originalFileName} • Uploaded {formatDate(dataset.createdAt)} • {dataset.rowCount} rows
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3 text-sm">
                     <div className="rounded-full bg-white/5 px-4 py-2 text-slate-300">
@@ -80,22 +87,11 @@ export function HistoryPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <Link
-                    to={`/dashboard/${dataset.id}`}
-                    className="inline-flex rounded-full bg-teal-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-teal-400"
-                  >
-                    View Dashboard
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(dataset.id)}
-                    className="inline-flex rounded-full border border-rose-400/30 px-5 py-3 text-sm font-bold text-rose-200 transition hover:bg-rose-500/10"
-                  >
-                    Delete
-                  </button>
+                  <Button as={Link} to={`/dashboard/${dataset.id}`}>View Dashboard</Button>
+                  <Button type="button" variant="danger" onClick={() => handleDelete(dataset.id)}>Delete</Button>
                 </div>
               </div>
-            </article>
+            </Card>
           ))}
         </div>
       )}

@@ -94,25 +94,27 @@ const buildRawJson = (rawRow) => {
   return normalized;
 };
 
+const buildDuplicateKey = (row) =>
+  JSON.stringify([
+    row.projectName?.toLowerCase() || '',
+    row.clientName?.toLowerCase() || '',
+    row.revenue ?? 0,
+    row.cost ?? 0,
+    row.budget ?? null,
+    row.status?.toLowerCase() || '',
+    row.date || null,
+  ]);
+
 export const cleanRows = (rows = []) => {
   const warnings = [];
   const duplicateTracker = new Set();
   const cleanedRows = [];
-  let duplicatesRemoved = 0;
+  let duplicateRowsRemoved = 0;
   let missingValuesFixed = 0;
   let invalidDates = 0;
 
   rows.forEach((rawRow, index) => {
     const rawJson = buildRawJson(rawRow);
-    const duplicateKey = JSON.stringify(rawJson);
-
-    if (duplicateTracker.has(duplicateKey)) {
-      duplicatesRemoved += 1;
-      return;
-    }
-
-    duplicateTracker.add(duplicateKey);
-
     const normalizedRow = {};
     Object.entries(rawJson).forEach(([key, value]) => {
       normalizedRow[resolveCanonicalField(key)] = value;
@@ -166,13 +168,21 @@ export const cleanRows = (rows = []) => {
       rawJson,
     };
 
+    const duplicateKey = buildDuplicateKey(cleanedRow);
+    if (duplicateTracker.has(duplicateKey)) {
+      duplicateRowsRemoved += 1;
+      return;
+    }
+
+    duplicateTracker.add(duplicateKey);
+
     cleanedRows.push(cleanedRow);
   });
 
-  if (duplicatesRemoved > 0) {
+  if (duplicateRowsRemoved > 0) {
     warnings.push(
-      `${duplicatesRemoved} exact duplicate ${pluralize(duplicatesRemoved, 'row')} ${
-        duplicatesRemoved === 1 ? 'was' : 'were'
+      `${duplicateRowsRemoved} exact duplicate ${pluralize(duplicateRowsRemoved, 'row')} ${
+        duplicateRowsRemoved === 1 ? 'was' : 'were'
       } removed.`
     );
   }
@@ -205,7 +215,7 @@ export const cleanRows = (rows = []) => {
     cleanedRows,
     warnings,
     stats: {
-      duplicatesRemoved,
+      duplicateRowsRemoved,
       missingValuesFixed,
       invalidDates,
       discoveredCanonicalFields,

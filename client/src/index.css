@@ -17,10 +17,16 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+  background-attachment: fixed;
 }
 
 #root {
   min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .grid-pattern {

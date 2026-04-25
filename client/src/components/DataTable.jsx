@@ -1,67 +1,105 @@
 import { formatCurrency, formatDate, formatPercent } from '../utils/formatters.js';
+import { BudgetBadge } from './BudgetBadge.jsx';
+import { Card } from './Card.jsx';
+import { StatusBadge } from './StatusBadge.jsx';
 
-export function DataTable({ rows, title, description }) {
-  if (!rows?.length) {
+const cleanedColumns = [
+  { key: 'projectName', label: 'Project' },
+  { key: 'clientName', label: 'Client' },
+  { key: 'status', label: 'Status' },
+  { key: 'date', label: 'Date' },
+  { key: 'revenue', label: 'Revenue' },
+  { key: 'cost', label: 'Cost' },
+  { key: 'budget', label: 'Budget' },
+  { key: 'profit', label: 'Profit' },
+  { key: 'margin', label: 'Margin' },
+  { key: 'isOverBudget', label: 'Over Budget' },
+];
+
+export function DataTable({ rows = [], variant = 'cleaned', title, subtitle }) {
+  if (!rows.length) {
     return (
-      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-        <h2 className="text-lg font-bold text-white">{title}</h2>
-        <p className="mt-1 text-sm text-slate-400">{description}</p>
-        <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center text-sm text-slate-400">
+      <Card className="p-6">
+        {title ? <h2 className="text-lg font-bold text-white">{title}</h2> : null}
+        {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
+        <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center text-sm text-slate-400">
           No rows available.
         </div>
-      </section>
+      </Card>
     );
   }
 
-  return (
-    <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-      <h2 className="text-lg font-bold text-white">{title}</h2>
-      <p className="mt-1 text-sm text-slate-400">{description}</p>
+  const rawColumns = Object.keys(rows[0]);
+  const columns = variant === 'raw' ? rawColumns.map((key) => ({ key, label: key })) : cleanedColumns;
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-white/10">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-white/10 text-sm">
-            <thead className="bg-white/5 text-left text-slate-300">
+  const renderCell = (row, key) => {
+    if (variant === 'raw') {
+      const value = row[key];
+      return value === null || value === undefined || value === '' ? '-' : String(value);
+    }
+
+    if (key === 'status') {
+      return <StatusBadge status={row.status} />;
+    }
+
+    if (key === 'isOverBudget') {
+      return <BudgetBadge isOverBudget={row.isOverBudget} />;
+    }
+
+    if (key === 'date') {
+      return formatDate(row.date);
+    }
+
+    if (['revenue', 'cost', 'budget', 'profit'].includes(key)) {
+      return row[key] === null ? '-' : formatCurrency(row[key]);
+    }
+
+    if (key === 'margin') {
+      return formatPercent(row.margin);
+    }
+
+    return row[key] || '-';
+  };
+
+  return (
+    <Card className="p-6">
+      {title ? <h2 className="text-lg font-bold text-white">{title}</h2> : null}
+      {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
+      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="sticky top-0 z-10 bg-slate-950/95 text-slate-300 backdrop-blur">
               <tr>
-                <th className="px-4 py-3 font-semibold">Project</th>
-                <th className="px-4 py-3 font-semibold">Client</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Date</th>
-                <th className="px-4 py-3 font-semibold">Revenue</th>
-                <th className="px-4 py-3 font-semibold">Cost</th>
-                <th className="px-4 py-3 font-semibold">Profit</th>
-                <th className="px-4 py-3 font-semibold">Margin</th>
-                <th className="px-4 py-3 font-semibold">Budget Flag</th>
+                {columns.map((column) => (
+                  <th key={column.key} className="px-4 py-3 font-semibold uppercase tracking-[0.12em] text-xs whitespace-nowrap">
+                    {column.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {rows.map((row) => (
-                <tr key={row.id || `${row.projectName}-${row.date || row.clientName || 'row'}`} className="bg-slate-950/30">
-                  <td className="px-4 py-3 font-semibold text-white">{row.projectName || '-'}</td>
-                  <td className="px-4 py-3 text-slate-300">{row.clientName || '-'}</td>
-                  <td className="px-4 py-3 text-slate-300">{row.status || '-'}</td>
-                  <td className="px-4 py-3 text-slate-300">{formatDate(row.date)}</td>
-                  <td className="px-4 py-3 text-slate-300">{formatCurrency(row.revenue)}</td>
-                  <td className="px-4 py-3 text-slate-300">{formatCurrency(row.cost)}</td>
-                  <td className={`px-4 py-3 font-semibold ${row.profit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                    {formatCurrency(row.profit)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">{formatPercent(row.margin)}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-                        row.isOverBudget ? 'bg-rose-500/15 text-rose-300' : 'bg-emerald-500/15 text-emerald-300'
+              {rows.map((row, rowIndex) => (
+                <tr key={`${variant}-${row.projectName || 'row'}-${rowIndex}`} className="bg-slate-950/30">
+                  {columns.map((column) => (
+                    <td
+                      key={`${column.key}-${rowIndex}`}
+                      className={`px-4 py-3 align-middle whitespace-nowrap ${
+                        variant === 'cleaned' && column.key === 'profit'
+                          ? row.profit >= 0
+                            ? 'font-semibold text-emerald-300'
+                            : 'font-semibold text-rose-300'
+                          : 'text-slate-300'
                       }`}
                     >
-                      {row.isOverBudget ? 'Over Budget' : 'On Track'}
-                    </span>
-                  </td>
+                      {renderCell(row, column.key)}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { uploadDataset } from '../api/datasets.js';
-import { PreviewTable } from '../components/PreviewTable.jsx';
-import { SectionHeader } from '../components/SectionHeader.jsx';
-
-const acceptedExtensions = '.csv,.xlsx,.xls';
+import { Button } from '../components/Button.jsx';
+import { Card } from '../components/Card.jsx';
+import { LoadingState } from '../components/LoadingState.jsx';
+import { PageHeader } from '../components/PageHeader.jsx';
+import { PreviewTabs } from '../components/PreviewTabs.jsx';
+import { UploadDropzone } from '../components/UploadDropzone.jsx';
 
 export function UploadPage() {
   const inputRef = useRef(null);
@@ -15,19 +17,25 @@ export function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadResult, setUploadResult] = useState(null);
   const [error, setError] = useState('');
+  const [showRedirectNotice, setShowRedirectNotice] = useState(false);
 
-  const fileTypeLabel = useMemo(() => {
-    if (!selectedFile) {
-      return '';
+  useEffect(() => {
+    if (!uploadResult?.datasetId) {
+      return undefined;
     }
 
-    const extension = selectedFile.name.split('.').pop()?.toUpperCase();
-    return extension ? `${extension} file selected` : 'File selected';
-  }, [selectedFile]);
+    setShowRedirectNotice(true);
+    const timeout = window.setTimeout(() => {
+      navigate(`/dashboard/${uploadResult.datasetId}`);
+    }, 1000);
+
+    return () => window.clearTimeout(timeout);
+  }, [navigate, uploadResult]);
 
   const handleFileSelection = (file) => {
     setError('');
     setUploadResult(null);
+    setShowRedirectNotice(false);
     setSelectedFile(file || null);
   };
 
@@ -51,112 +59,125 @@ export function UploadPage() {
     }
   };
 
+  const pipelineSteps = [
+    { label: 'Upload', description: 'Accept CSV, XLSX, and XLS files from local storage.' },
+    { label: 'Parse', description: 'Read CSV rows or the first Excel sheet into JSON records.' },
+    { label: 'Clean', description: 'Normalize dates, money values, statuses, and duplicate rows.' },
+    { label: 'Store', description: 'Save datasets and cleaned rows into Neon PostgreSQL.' },
+    { label: 'Analyze', description: 'Generate summary cards, charts, and business insights.' },
+  ];
+
   return (
-    <div className="mx-auto max-w-7xl px-6 py-16">
-      <SectionHeader
+    <div className="mx-auto max-w-7xl px-6">
+      <PageHeader
         eyebrow="Upload"
         title="Upload a business dataset"
-        description="Drag in a CSV or Excel file, parse the first sheet, preview the raw rows, then inspect the cleaned output before opening the dashboard."
+        description="Drop in a business file, preview the parsed rows, and move directly into a polished analysis dashboard."
       />
 
-      <section className="mt-8 grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-8">
-          <div
-            role="button"
-            tabIndex={0}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              setIsDragging(false);
-              handleFileSelection(event.dataTransfer.files?.[0]);
-            }}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                inputRef.current?.click();
-              }
-            }}
-            className={`flex min-h-[320px] cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border border-dashed p-8 text-center transition ${
-              isDragging ? 'border-teal-300 bg-teal-500/10' : 'border-white/15 bg-white/5 hover:bg-white/[0.07]'
-            }`}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept={acceptedExtensions}
-              className="hidden"
-              onChange={(event) => handleFileSelection(event.target.files?.[0])}
-            />
-            <div className="h-16 w-16 rounded-3xl bg-teal-500/15" />
-            <h2 className="mt-6 text-2xl font-extrabold text-white">Drop CSV or Excel here</h2>
-            <p className="mt-3 max-w-md text-slate-300">
-              Accepts `.csv`, `.xlsx`, and `.xls`. InsightFlow parses the file, applies cleaning rules, saves it to Neon PostgreSQL, and generates a dashboard.
-            </p>
-            <div className="mt-6 rounded-full border border-white/10 bg-slate-950/70 px-4 py-2 text-sm text-slate-300">
-              {fileTypeLabel || 'No file selected'}
-            </div>
-          </div>
+      {showRedirectNotice ? (
+        <div className="mt-6 rounded-2xl border border-teal-400/20 bg-teal-500/10 px-4 py-3 text-sm text-teal-50">
+          Dataset uploaded. Opening dashboard…
+        </div>
+      ) : null}
 
-          <button
-            type="button"
-            onClick={handleUpload}
-            disabled={isUploading}
-            className="mt-6 inline-flex w-full justify-center rounded-full bg-teal-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-          >
-            {isUploading ? 'Processing dataset...' : 'Start Analysis'}
-          </button>
-
+      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
+        <div className="min-w-0">
           {isUploading ? (
-            <div className="mt-5">
-              <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-teal-400 transition-all" style={{ width: `${uploadProgress}%` }} />
+            <LoadingState title="Parsing and cleaning your data" description="InsightFlow is validating the file, standardizing records, and storing the cleaned dataset." />
+          ) : uploadResult ? (
+            <Card className="p-6 sm:p-8">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-100">
+                Upload complete
               </div>
-              <p className="mt-2 text-sm text-slate-400">Upload progress: {uploadProgress}%</p>
-            </div>
-          ) : null}
+              <h2 className="mt-5 text-2xl font-extrabold text-white">{uploadResult.datasetName}</h2>
+              <p className="mt-2 text-sm text-slate-300">Your dataset is stored and ready for analysis.</p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">File type</p>
+                  <p className="mt-2 text-lg font-bold text-white">{uploadResult.fileType}</p>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Rows processed</p>
+                  <p className="mt-2 text-lg font-bold text-white">{uploadResult.rowCount}</p>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Duplicates removed</p>
+                  <p className="mt-2 text-lg font-bold text-white">{uploadResult.duplicateRowsRemoved}</p>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Missing values fixed</p>
+                  <p className="mt-2 text-lg font-bold text-white">{uploadResult.missingValuesFixed}</p>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button as={Link} to={`/dashboard/${uploadResult.datasetId}`}>View Dashboard</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setUploadResult(null);
+                    setSelectedFile(null);
+                    setShowRedirectNotice(false);
+                  }}
+                >
+                  Upload another file
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <UploadDropzone
+              inputRef={inputRef}
+              isDragging={isDragging}
+              selectedFile={selectedFile}
+              isUploading={isUploading}
+              uploadProgress={uploadProgress}
+              onPick={(file) => handleFileSelection(file)}
+              onDropFile={(payload) => {
+                if (payload === 'drag') {
+                  setIsDragging(true);
+                  return;
+                }
+
+                if (payload === 'leave') {
+                  setIsDragging(false);
+                  return;
+                }
+
+                setIsDragging(false);
+                handleFileSelection(payload);
+              }}
+              onUpload={handleUpload}
+            />
+          )}
 
           {error ? (
-            <div className="mt-5 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
+            <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
               {error}
             </div>
           ) : null}
-
-          {uploadResult ? (
-            <div className="mt-6 rounded-[1.5rem] border border-teal-400/20 bg-teal-500/10 p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-300">Upload complete</p>
-              <h3 className="mt-2 text-xl font-bold text-white">{uploadResult.datasetName}</h3>
-              <p className="mt-2 text-sm text-slate-200">
-                Parsed as {uploadResult.fileType}. Dataset saved successfully with {uploadResult.summary.projectCount} cleaned rows.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate(`/dashboard/${uploadResult.datasetId}`)}
-                className="mt-4 inline-flex rounded-full bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
-              >
-                Open Dashboard
-              </button>
-            </div>
-          ) : null}
         </div>
 
-        <div className="grid gap-6">
-          <PreviewTable title="Raw Data" rows={uploadResult?.rawPreview || []} kind="raw" />
-          <PreviewTable title="Cleaned Data" rows={uploadResult?.cleanedPreview || []} kind="cleaned" />
-          {uploadResult?.warnings?.length ? (
-            <section className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-6">
-              <h2 className="text-lg font-bold text-amber-100">Cleaning Warnings</h2>
-              <div className="mt-4 grid gap-2 text-sm text-amber-50">
-                {uploadResult.warnings.map((warning, index) => (
-                  <p key={`${warning}-${index}`}>{warning}</p>
-                ))}
-              </div>
-            </section>
-          ) : null}
-        </div>
+        <Card className="p-6 sm:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">How it works</p>
+          <h2 className="mt-3 text-2xl font-extrabold text-white">Upload → Parse → Clean → Store → Analyze</h2>
+          <div className="mt-6 grid gap-4">
+            {pipelineSteps.map((step, index) => (
+              <article key={step.label} className="rounded-2xl bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Step {index + 1}</p>
+                <h3 className="mt-2 text-base font-bold text-white">{step.label}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-300">{step.description}</p>
+              </article>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section className="mt-8">
+        <PreviewTabs
+          rawRows={uploadResult?.rawPreview || []}
+          cleanedRows={uploadResult?.cleanedPreview || []}
+          warnings={uploadResult?.warnings || []}
+        />
       </section>
     </div>
   );

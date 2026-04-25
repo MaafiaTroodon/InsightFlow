@@ -63,10 +63,16 @@ Server `.env` example:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
-PORT=5000
+PORT=5001
 ```
 
 Neon PostgreSQL connection strings should be placed in `server/.env` as `DATABASE_URL`.
+
+Client `.env` example:
+
+```env
+VITE_API_URL="http://localhost:5001/api"
+```
 
 ## Local Setup
 

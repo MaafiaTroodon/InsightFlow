@@ -5,7 +5,7 @@ export const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(Number(value || 0));
 
-export const formatPercent = (value) => `${(Number(value || 0) * 100).toFixed(1)}%`;
+export const formatPercent = (value) => `${(Number(value || 0) * 100).toFixed(2)}%`;
 
 export const formatDate = (value) => {
   if (!value) {
@@ -22,4 +22,12 @@ export const formatDate = (value) => {
     day: 'numeric',
     year: 'numeric',
   }).format(date);
+};
+
+export const truncateText = (value, length = 24) => {
+  if (!value) {
+    return '';
+  }
+
+  return value.length > length ? `${value.slice(0, length - 1)}…` : value;
 };
