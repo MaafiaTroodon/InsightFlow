@@ -62,7 +62,7 @@ export function HistoryPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-6">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6">
       <PageHeader
         eyebrow="History"
         title="Your datasets"
@@ -104,10 +104,10 @@ export function HistoryPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
-                  <Button variant="secondary" onClick={() => handleOpenPreview(dataset.id)}>View Data</Button>
-                  <Button as={Link} to={`/dashboard/${dataset.id}`}>Open Dashboard</Button>
-                  <Button type="button" variant="danger" onClick={() => setDatasetToDelete(dataset)}>Delete</Button>
+                <div className="grid gap-3 sm:flex sm:flex-wrap">
+                  <Button className="w-full sm:w-auto" variant="secondary" onClick={() => handleOpenPreview(dataset.id)}>View Data</Button>
+                  <Button className="w-full sm:w-auto" as={Link} to={`/dashboard/${dataset.id}`}>Open Dashboard</Button>
+                  <Button className="w-full sm:w-auto" type="button" variant="danger" onClick={() => setDatasetToDelete(dataset)}>Delete</Button>
                 </div>
               </div>
             </Card>

@@ -16,7 +16,7 @@ export function UploadDropzone({
   return (
     <Card className="overflow-hidden p-0">
       <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
-        <div className="p-6 sm:p-8">
+        <div className="p-5 sm:p-8">
       <div
         role="button"
         tabIndex={0}
@@ -35,13 +35,13 @@ export function UploadDropzone({
             inputRef.current?.click();
           }
         }}
-        className={`flex min-h-[340px] flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-10 text-center transition ${
+        className={`flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition sm:min-h-[340px] sm:px-6 sm:py-10 ${
           isDragging ? 'border-teal-300 bg-teal-500/10' : 'border-white/15 bg-white/5 hover:bg-white/[0.07]'
         }`}
       >
         <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(event) => onPick(event.target.files?.[0])} />
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-500/15 text-2xl text-teal-300">↑</div>
-        <h2 className="mt-6 text-2xl font-extrabold text-white">Drop your dataset here</h2>
+        <h2 className="mt-6 text-xl font-extrabold text-white sm:text-2xl">Drop your dataset here</h2>
         <p className="mt-3 max-w-lg text-sm leading-6 text-slate-300">
           Upload CSV or Excel business data and InsightFlow will parse, clean, store, and analyze it automatically.
         </p>
@@ -72,11 +72,11 @@ export function UploadDropzone({
       </div>
         </div>
 
-        <div className="border-t border-white/10 bg-gradient-to-br from-teal-400/10 via-transparent to-sky-400/10 p-6 sm:p-8 lg:border-l lg:border-t-0">
+        <div className="border-t border-white/10 bg-gradient-to-br from-teal-400/10 via-transparent to-sky-400/10 p-5 sm:p-8 lg:border-l lg:border-t-0">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">Preview Flow</p>
-          <h3 className="mt-3 text-2xl font-extrabold text-white">Upload once, review clean outputs, then open analysis.</h3>
+          <h3 className="mt-3 text-xl font-extrabold text-white sm:text-2xl">Upload once, review clean outputs, then open analysis.</h3>
           <p className="mt-3 text-sm leading-7 text-slate-300">
-            InsightFlow is built for operational spreadsheets. Parse the file, fix messy values, preview the repaired rows, and move straight into charts and automated business insights.
+            InsightFlow is built for operational spreadsheets. Parse the file, fix messy values, preview the repaired rows, move into charts and automated business insights, then export a polished PDF report.
           </p>
 
           <div className="mt-6 grid gap-4">
@@ -107,6 +107,22 @@ export function UploadDropzone({
                 <div className="h-8 flex-1 rounded-t-lg bg-sky-500/70" />
                 <div className="h-20 flex-1 rounded-t-lg bg-amber-400/70" />
                 <div className="h-16 flex-1 rounded-t-lg bg-emerald-400/70" />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">PDF report</p>
+                <span className="rounded-full bg-teal-500/15 px-3 py-1 text-[10px] font-semibold text-teal-200">Preview + Download</span>
+              </div>
+              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3 text-slate-900">
+                <div className="h-2 w-24 rounded-full bg-slate-200" />
+                <div className="mt-2 h-2 w-3/4 rounded-full bg-slate-200" />
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="h-7 rounded-lg bg-slate-100" />
+                  <div className="h-7 rounded-lg bg-slate-100" />
+                  <div className="h-7 rounded-lg bg-slate-100" />
+                </div>
               </div>
             </div>
           </div>

@@ -67,7 +67,7 @@ const buildColumnMapping = (headers = []) => {
 
   headers.forEach((header, index) => {
     const original = header?.original ?? `Column ${index + 1}`;
-    const normalized = header?.normalized ?? toSnakeCase(original) || `column_${index + 1}`;
+    const normalized = header?.normalized ?? (toSnakeCase(original) || `column_${index + 1}`);
     const canonicalField = resolveCanonicalField(normalized);
 
     if (canonicalFields.has(canonicalField)) {

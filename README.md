@@ -63,10 +63,10 @@ root/
 Server `.env` example:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
-JWT_SECRET="replace-with-a-long-random-secret"
+DATABASE_URL=
+JWT_SECRET=
 PORT=5000
-CLIENT_URL="http://localhost:4000"
+CLIENT_URL=http://localhost:4000
 ```
 
 Neon PostgreSQL connection strings should be placed in `server/.env` as `DATABASE_URL`.
@@ -74,7 +74,7 @@ Neon PostgreSQL connection strings should be placed in `server/.env` as `DATABAS
 Client `.env` example:
 
 ```env
-VITE_API_URL="http://localhost:5000/api"
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ## Local Setup
@@ -125,6 +125,70 @@ npm run dev
 ```
 
 The Vite app runs on `http://localhost:4000`.
+
+## Deployment
+
+InsightFlow is deployed as two separate services:
+
+- Frontend: Netlify
+- Backend API: Render, Railway, or Fly
+- Database: Neon PostgreSQL
+
+Do not deploy the Express backend to Netlify. Netlify should only host the Vite frontend.
+
+### Frontend on Netlify
+
+1. Import the GitHub repository into Netlify.
+2. Set the base directory to `client`.
+3. Set the build command to `npm run build`.
+4. Set the publish directory to `dist`.
+5. Add the environment variable `VITE_API_URL` with your deployed backend URL, for example:
+
+```env
+VITE_API_URL=https://your-backend-url.example.com/api
+```
+
+6. Deploy the site.
+
+The frontend includes `client/public/_redirects` with:
+
+```text
+/* /index.html 200
+```
+
+This enables SPA routing on Netlify so refreshes on routes like `/upload` or `/dashboard/:id` do not 404.
+
+### Backend on Render, Railway, or Fly
+
+Deploy the `server` app separately and set these environment variables:
+
+```env
+DATABASE_URL=your_neon_connection_string
+JWT_SECRET=your_long_random_secret
+PORT=5000
+CLIENT_URL=https://your-netlify-site.netlify.app
+```
+
+If you need multiple allowed frontend origins, `CLIENT_URL` can be a comma-separated list.
+
+Examples:
+
+```env
+CLIENT_URL=https://your-netlify-site.netlify.app
+```
+
+or
+
+```env
+CLIENT_URL=https://your-netlify-site.netlify.app,http://localhost:4000,http://localhost:5173
+```
+
+### Production Notes
+
+- Do not use `localhost` in the production frontend `VITE_API_URL`.
+- Do not expose `DATABASE_URL` in the frontend.
+- The backend owns database access and auth cookies.
+- Protected routes continue to work after refresh on Netlify because the frontend uses SPA redirects and the backend is called through `VITE_API_URL`.
 
 ## Authentication Flow
 

@@ -16,11 +16,14 @@ import {
 import { fetchDatasetById } from '../api/datasets.js';
 import { Button } from '../components/Button.jsx';
 import { ChartCard } from '../components/ChartCard.jsx';
+import { ColumnMappingModal } from '../components/ColumnMappingModal.jsx';
 import { DataTable } from '../components/DataTable.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
+import { ExecutiveSummaryCard } from '../components/ExecutiveSummaryCard.jsx';
 import { InsightCard } from '../components/InsightCard.jsx';
 import { LoadingState } from '../components/LoadingState.jsx';
 import { PageHeader } from '../components/PageHeader.jsx';
+import { ReportPreviewModal } from '../components/ReportPreviewModal.jsx';
 import { ScrollReveal } from '../components/ScrollReveal.jsx';
 import { SummaryCard } from '../components/SummaryCard.jsx';
 import { formatCurrency, formatDate, formatPercent, truncateText } from '../utils/formatters.js';
@@ -36,7 +39,9 @@ const labelMap = {
   count: 'Count',
 };
 
-const legendFormatter = (value) => labelMap[value] || value;
+const legendFormatter = (value) => (
+  <span className="ml-2 mr-5 inline-block text-sm font-semibold text-slate-200">{labelMap[value] || value}</span>
+);
 const tooltipLabelFormatter = (label) => `Project: ${label}`;
 const fullProjectName = (name = '') => {
   const words = String(name).split(' ');
@@ -51,6 +56,8 @@ export function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isMappingOpen, setIsMappingOpen] = useState(false);
 
   useEffect(() => {
     const loadDataset = async () => {
@@ -118,7 +125,7 @@ export function DashboardPage() {
     .slice(0, 10);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 pb-12">
+    <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6">
       <PageHeader
         eyebrow="Dashboard"
         title={data.dataset.name}
@@ -131,13 +138,19 @@ export function DashboardPage() {
         ]}
         actions={
           <>
-            <Button as={Link} variant="secondary" to="/history">View History</Button>
-            <Button as={Link} to="/upload">Upload New</Button>
+            <Button className="w-full sm:w-auto" as={Link} variant="secondary" to="/history">View History</Button>
+            <Button className="w-full sm:w-auto" as={Link} to="/upload">Upload New</Button>
+            <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setIsMappingOpen(true)}>View Column Mapping</Button>
+            <Button className="w-full sm:w-auto" onClick={() => setIsReportOpen(true)}>Preview / Download PDF</Button>
           </>
         }
       />
 
       <ScrollReveal>
+      <ExecutiveSummaryCard lines={data.executiveSummary} />
+      </ScrollReveal>
+
+      <ScrollReveal delay={30}>
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {summaryCards.map((card) => (
           <SummaryCard key={card.label} label={card.label} value={card.value} tone={card.tone} />
@@ -281,6 +294,17 @@ export function DashboardPage() {
         </div>
       </div>
       </ScrollReveal>
+
+      <ColumnMappingModal
+        isOpen={isMappingOpen}
+        onClose={() => setIsMappingOpen(false)}
+        columnMapping={data.columnMapping || data.dataset.columnMapping}
+      />
+      <ReportPreviewModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        data={data}
+      />
     </div>
   );
 }

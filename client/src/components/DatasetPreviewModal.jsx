@@ -28,10 +28,10 @@ export function DatasetPreviewModal({ isOpen, onClose, dataset, rawRows = [], cl
     : [];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-5 sm:px-6">
+    <Modal isOpen={isOpen} onClose={onClose} panelClassName="max-w-6xl max-h-[90vh]">
+      <div className="flex items-start justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
         <div>
-          <h2 className="text-2xl font-extrabold text-white">{dataset?.name || 'Dataset preview'}</h2>
+          <h2 className="text-xl font-extrabold text-white sm:text-2xl">{dataset?.name || 'Dataset preview'}</h2>
           <p className="mt-1 text-sm text-slate-400">
             {dataset?.fileType || 'Dataset'} • {dataset?.rowCount || cleanedRows.length} cleaned rows
           </p>
@@ -41,7 +41,7 @@ export function DatasetPreviewModal({ isOpen, onClose, dataset, rawRows = [], cl
         </button>
       </div>
 
-      <div className="flex-1 overflow-hidden px-5 py-5 sm:px-6">
+      <div className="flex-1 overflow-hidden px-4 py-4 sm:px-6 sm:py-5">
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <button
@@ -57,7 +57,7 @@ export function DatasetPreviewModal({ isOpen, onClose, dataset, rawRows = [], cl
           ))}
         </div>
 
-        <div className="mt-5 h-full max-h-[calc(85vh-12.5rem)] overflow-auto pr-1">
+        <div className="mt-5 h-full max-h-[calc(90vh-12rem)] overflow-auto pr-1 sm:max-h-[calc(85vh-12.5rem)]">
           {activeTab === 'raw' ? <DataTable rows={rawRows.slice(0, 10)} variant="raw" title="First 10 raw rows" /> : null}
           {activeTab === 'cleaned' ? <DataTable rows={cleanedRows.slice(0, 10)} variant="cleaned" title="First 10 cleaned rows" /> : null}
           {activeTab === 'warnings' ? (
@@ -88,10 +88,10 @@ export function DatasetPreviewModal({ isOpen, onClose, dataset, rawRows = [], cl
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-white/10 bg-slate-900/95 px-5 py-4 sm:px-6">
-        <Button variant="secondary" onClick={onClose}>Close</Button>
+      <div className="flex flex-col gap-3 border-t border-white/10 bg-slate-900/95 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:px-6">
+        <Button className="w-full sm:w-auto" variant="secondary" onClick={onClose}>Close</Button>
         {dataset?.id ? (
-          <Button as={Link} to={`/dashboard/${dataset.id}`} className="max-w-full" onClick={onClose}>
+          <Button as={Link} to={`/dashboard/${dataset.id}`} className="w-full max-w-full sm:w-auto" onClick={onClose}>
             Open Dashboard Analysis
           </Button>
         ) : null}

@@ -104,7 +104,7 @@ export function UploadPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-6">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6">
       <PageHeader
         eyebrow="Upload"
         title="Upload a business dataset"
@@ -155,14 +155,15 @@ export function UploadPage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Button variant="secondary" onClick={() => setIsPreviewOpen(true)}>
+              <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
+                <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setIsPreviewOpen(true)}>
                   View Cleaned Data
                 </Button>
-                <Button as={Link} to={`/dashboard/${uploadResult.datasetId}`}>
+                <Button className="w-full sm:w-auto" as={Link} to={`/dashboard/${uploadResult.datasetId}`}>
                   Open Dashboard Analysis
                 </Button>
                 <Button
+                  className="w-full sm:w-auto"
                   variant="ghost"
                   onClick={() => {
                     setUploadResult(null);

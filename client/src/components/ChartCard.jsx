@@ -7,7 +7,7 @@ export function ChartCard({ title, description, children, className = '' }) {
         <h2 className="text-lg font-bold text-white">{title}</h2>
         {description ? <p className="mt-1 text-sm text-slate-400">{description}</p> : null}
       </div>
-      <div className="h-[360px]">{children}</div>
+      <div className="h-[300px] sm:h-[340px] lg:h-[360px]">{children}</div>
     </Card>
   );
 }

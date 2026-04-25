@@ -1,4 +1,4 @@
-import { apiFetch } from './http.js';
+import { API_BASE, apiFetch } from './http.js';
 
 export const registerUser = (payload) =>
   apiFetch('/auth/register', {
@@ -13,7 +13,7 @@ export const loginUser = (payload) =>
   });
 
 export const logoutUser = async () => {
-  await fetch(`${(import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')}/auth/logout`, {
+  await fetch(`${API_BASE}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });

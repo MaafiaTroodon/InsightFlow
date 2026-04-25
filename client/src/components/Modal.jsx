@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export function Modal({ isOpen, onClose, children }) {
+export function Modal({ isOpen, onClose, children, panelClassName = '' }) {
   useEffect(() => {
     if (!isOpen) {
       return undefined;
@@ -26,9 +26,9 @@ export function Modal({ isOpen, onClose, children }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm sm:p-6" onClick={onClose}>
       <div
-        className="my-auto flex max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-slate-950/50"
+        className={`my-auto flex max-h-[90vh] w-[calc(100vw-24px)] max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-slate-950/50 sm:w-full sm:max-h-[85vh] ${panelClassName}`}
         onClick={(event) => event.stopPropagation()}
       >
         {children}
