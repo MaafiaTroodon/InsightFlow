@@ -33,8 +33,32 @@ model User {
   passwordHash         String
   createdAt            DateTime              @default(now())
   datasets             Dataset[]
+  jobLogs              JobLog[]
   constructionProjects ConstructionProject[]
   projectTrades        ProjectTrade[]
+}
+
+model JobLog {
+  id           String   @id
+  userId       String
+  projectName  String
+  siteLocation String?
+  logDate      DateTime
+  author       String?
+  weather      String?
+  rawText      String
+  summary      String?
+  delays       Json?
+  contractors  Json?
+  risks        Json?
+  actionItems  Json?
+  riskLevel    String   @default("low")
+  createdAt    DateTime @default(now())
+  attachments  Json?
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([logDate])
+  @@index([userId])
 }
 
 model ConstructionProject {
