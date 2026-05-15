@@ -1,310 +1,576 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area, Legend,
+  ComposedChart, Line, ReferenceLine,
 } from 'recharts';
 import { fetchDatasetById } from '../api/datasets.js';
-import { Button } from '../components/Button.jsx';
-import { ChartCard } from '../components/ChartCard.jsx';
 import { ColumnMappingModal } from '../components/ColumnMappingModal.jsx';
-import { DataTable } from '../components/DataTable.jsx';
-import { EmptyState } from '../components/EmptyState.jsx';
-import { ExecutiveSummaryCard } from '../components/ExecutiveSummaryCard.jsx';
-import { InsightCard } from '../components/InsightCard.jsx';
-import { LoadingState } from '../components/LoadingState.jsx';
-import { PageHeader } from '../components/PageHeader.jsx';
 import { ReportPreviewModal } from '../components/ReportPreviewModal.jsx';
-import { ScrollReveal } from '../components/ScrollReveal.jsx';
-import { SummaryCard } from '../components/SummaryCard.jsx';
-import { formatCurrency, formatDate, formatPercent, truncateText } from '../utils/formatters.js';
+import {
+  ArrowLeft, Upload, AlertTriangle, CheckCircle2,
+  TrendingDown, Building2, DollarSign, Zap,
+  FileText, ChevronDown, ChevronUp, Tag, Hash, TrendingUp, BarChart2,
+} from 'lucide-react';
 
-const pieColors = ['#2dd4bf', '#38bdf8', '#f59e0b', '#fb7185'];
-const chartMargin = { top: 8, right: 16, left: 0, bottom: 78 };
+// ── helpers ────────────────────────────────────────────────────────────────────
+const fmt$ = (v) =>
+  new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(Number(v) || 0);
+const fmtPct = (v) => `${Number(v || 0).toFixed(1)}%`;
+const shortDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : '—';
 
-const labelMap = {
-  revenue: 'Revenue',
-  cost: 'Cost',
-  profit: 'Profit',
-  marginPercent: 'Margin %',
-  count: 'Count',
+const TOOLTIP = {
+  contentStyle: { background: 'rgba(11,18,32,0.97)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#e2e8f0', fontSize: 12 },
+  labelStyle:   { color: '#94a3b8', fontWeight: 600, marginBottom: 4 },
+  itemStyle:    { color: '#e2e8f0' },
+  cursor:       { fill: 'rgba(255,255,255,0.04)' },
 };
 
-const legendFormatter = (value) => (
-  <span className="ml-2 mr-5 inline-block text-sm font-semibold text-slate-200">{labelMap[value] || value}</span>
-);
-const tooltipLabelFormatter = (label) => `Project: ${label}`;
-const fullProjectName = (name = '') => {
-  const words = String(name).split(' ');
-  if (words.length === 1) {
-    return truncateText(name, 14);
-  }
-  return words.slice(0, 2).join(' ');
-};
+const PIE_COLORS = ['#6366f1','#22d3ee','#f59e0b','#10b981','#f87171','#a78bfa','#fb923c','#34d399','#60a5fa','#e879f9'];
 
-export function DashboardPage() {
-  const { id } = useParams();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [isReportOpen, setIsReportOpen] = useState(false);
-  const [isMappingOpen, setIsMappingOpen] = useState(false);
-
-  useEffect(() => {
-    const loadDataset = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const response = await fetchDatasetById(id);
-        setData(response);
-      } catch (loadError) {
-        setError(loadError.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDataset();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-7xl px-6">
-        <LoadingState title="Loading dashboard" description="Fetching summary metrics, chart data, and cleaned rows." />
+function KpiCard({ icon: Icon, label, value, sub, color = 'text-brand-400', bg = 'bg-brand-500/15' }) {
+  return (
+    <div className="rounded-xl border border-rim bg-surface/60 p-4 flex items-start gap-3">
+      <div className={`w-10 h-10 rounded-lg ${bg} flex items-center justify-center shrink-0`}>
+        <Icon className={`w-5 h-5 ${color}`} />
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-7xl px-6">
-        <EmptyState title="Dashboard unavailable" description={error} actionLabel="Back to upload" />
+      <div className="min-w-0">
+        <div className={`text-xl font-bold ${color} leading-tight`}>{value}</div>
+        <div className="text-xs text-ink-muted mt-0.5">{label}</div>
+        {sub && <div className="text-xs text-white/40 mt-0.5">{sub}</div>}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (!data) {
-    return (
-      <div className="mx-auto max-w-7xl px-6">
-        <EmptyState
-          title="No dataset selected"
-          description="Upload a business dataset first to generate a dashboard and insights."
-        />
-      </div>
-    );
-  }
+function SectionTitle({ children, sub }) {
+  return (
+    <div className="mb-3">
+      <h2 className="text-sm font-semibold text-white">{children}</h2>
+      {sub && <p className="text-xs text-ink-muted mt-0.5">{sub}</p>}
+    </div>
+  );
+}
 
-  const summaryCards = [
-    { label: 'Total Revenue', value: formatCurrency(data.summary.totalRevenue), tone: 'text-emerald-300' },
-    { label: 'Total Cost', value: formatCurrency(data.summary.totalCost), tone: 'text-amber-200' },
-    { label: 'Total Profit', value: formatCurrency(data.summary.totalProfit), tone: data.summary.totalProfit >= 0 ? 'text-teal-300' : 'text-rose-300' },
-    { label: 'Average Margin', value: formatPercent(data.summary.averageMargin), tone: 'text-sky-300' },
-    { label: 'Projects', value: data.summary.projectCount, tone: 'text-violet-300' },
-    { label: 'Over Budget', value: data.summary.overBudgetCount, tone: 'text-rose-200' },
-  ];
+function ChartShell({ title, sub, children, className = '' }) {
+  return (
+    <div className={`rounded-xl border border-rim bg-surface/60 p-4 ${className}`}>
+      <SectionTitle sub={sub}>{title}</SectionTitle>
+      {children}
+    </div>
+  );
+}
 
-  const topProjectFinancials = [...data.chartData.projectFinancials]
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 10);
+// ── payables-specific dashboard ────────────────────────────────────────────────
+function PayablesDashboard({ data }) {
+  const { summary, chartData, rows, dataset } = data;
+  const [showAllRows, setShowAllRows] = useState(false);
+  const [showAllInvoices, setShowAllInvoices] = useState(false);
 
-  const topProfitProjects = [...data.chartData.projectFinancials]
-    .sort((a, b) => Math.abs(b.profit) - Math.abs(a.profit))
-    .slice(0, 10);
+  const totalPayables  = summary.totalCost;
+  const projects       = chartData.projectBreakdown || [];
+  const vendors        = chartData.vendorBreakdown   || [];
+  const categories     = chartData.categoryBreakdown || [];
+  const timeline       = chartData.invoiceTimeline   || [];
+  const hstIssues      = chartData.hstIssues         || [];
+  const creditMemos    = chartData.creditMemos       || [];
+  const holdback       = chartData.holdbackTotal     || 0;
+  const monthlyByCat   = chartData.monthlyByCategory || [];
+  const allCats        = chartData.allCats           || [];
+  const topInvoices    = chartData.topInvoices       || [];
+  const invoiceCount   = chartData.invoiceCount      || rows.length;
+  const avgInvoice     = chartData.avgInvoiceSize    || 0;
+  const largestInvoice = chartData.largestInvoice    || 0;
+  const uniqueProjects = [...new Set(rows.map(r => r.projectName))].length;
 
-  const topMarginProjects = [...data.chartData.marginByProject]
-    .sort((a, b) => b.marginPercent - a.marginPercent)
-    .slice(0, 10);
+  const displayRows = showAllRows ? rows : rows.slice(0, 12);
+  const displayInvoices = showAllInvoices ? topInvoices : topInvoices.slice(0, 8);
+
+  // Category color map so stacked bars are consistent with the legend
+  const catColorMap = {};
+  allCats.forEach((c, i) => { catColorMap[c] = PIE_COLORS[i % PIE_COLORS.length]; });
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6">
-      <PageHeader
-        eyebrow="Dashboard"
-        title={data.dataset.name}
-        breadcrumb="Uploads / Dashboard"
-        description="A cleaned business dataset with summary metrics, charted financials, and automated business insights."
-        meta={[
-          data.dataset.originalFileName,
-          `Uploaded ${formatDate(data.dataset.createdAt)}`,
-          `${data.dataset.rowCount} cleaned rows`,
-        ]}
-        actions={
-          <>
-            <Button className="w-full sm:w-auto" as={Link} variant="secondary" to="/history">View History</Button>
-            <Button className="w-full sm:w-auto" as={Link} to="/upload">Upload New</Button>
-            <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setIsMappingOpen(true)}>View Column Mapping</Button>
-            <Button className="w-full sm:w-auto" onClick={() => setIsReportOpen(true)}>Preview / Download PDF</Button>
-          </>
-        }
-      />
-
-      <ScrollReveal>
-      <ExecutiveSummaryCard lines={data.executiveSummary} />
-      </ScrollReveal>
-
-      <ScrollReveal delay={30}>
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {summaryCards.map((card) => (
-          <SummaryCard key={card.label} label={card.label} value={card.value} tone={card.tone} />
-        ))}
+    <div className="space-y-5">
+      {/* KPIs — 6 cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        <KpiCard icon={DollarSign}    label="Total Payables"   value={fmt$(totalPayables)}  color="text-brand-400"   bg="bg-brand-500/15" />
+        <KpiCard icon={Building2}     label="Projects"         value={uniqueProjects}        color="text-sky-400"    bg="bg-sky-500/15" />
+        <KpiCard icon={Hash}          label="Invoices"         value={invoiceCount}          color="text-violet-400" bg="bg-violet-500/15" />
+        <KpiCard icon={BarChart2}     label="Avg Invoice"      value={fmt$(avgInvoice)}      color="text-cyan-400"   bg="bg-cyan-500/15" />
+        <KpiCard icon={AlertTriangle} label="HST Flags"        value={hstIssues.length}
+          color={hstIssues.length > 0 ? 'text-amber-400' : 'text-emerald-400'}
+          bg={hstIssues.length > 0 ? 'bg-amber-500/15' : 'bg-emerald-500/15'} />
+        <KpiCard icon={TrendingDown}  label="Holdback"         value={fmt$(holdback)}        color="text-rose-400"   bg="bg-rose-500/15"
+          sub={holdback > 0 ? 'outstanding' : 'none held'} />
       </div>
-      </ScrollReveal>
 
-      <ScrollReveal delay={60}>
-      <div className="mt-8 grid gap-6 xl:grid-cols-3">
-        <ChartCard title="Revenue vs Cost" description="Side-by-side project comparison for top-line value and spend." className="xl:col-span-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topProjectFinancials} margin={chartMargin}>
-              <CartesianGrid stroke="rgba(148,163,184,0.15)" vertical={false} />
-              <XAxis dataKey="projectName" tickFormatter={(value) => fullProjectName(value)} angle={-35} textAnchor="end" height={80} tick={{ fill: '#cbd5e1', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#cbd5e1', fontSize: 12 }} />
-              <Tooltip
-                labelFormatter={tooltipLabelFormatter}
-                formatter={(value, name) => [formatCurrency(value), labelMap[name] || name]}
-                contentStyle={{
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid rgba(15, 23, 42, 0.08)',
-                  borderRadius: '16px',
-                  color: '#020617',
-                }}
-                labelStyle={{ color: '#020617', fontWeight: 700 }}
-                itemStyle={{ color: '#020617' }}
-              />
-              <Legend formatter={legendFormatter} wrapperStyle={{ paddingTop: 12 }} iconType="circle" />
-              <Bar dataKey="revenue" fill="#2dd4bf" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="cost" fill="#f59e0b" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Status Breakdown" description="Distribution of standardized project statuses.">
-          {data.chartData.statusBreakdown.length ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={data.chartData.statusBreakdown} dataKey="count" nameKey="status" innerRadius={65} outerRadius={110}>
-                  {data.chartData.statusBreakdown.map((entry, index) => (
-                    <Cell key={entry.status} fill={pieColors[index % pieColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value, _name, item) => [value, item?.payload?.status || 'Status']}
-                  contentStyle={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid rgba(15, 23, 42, 0.08)',
-                    borderRadius: '16px',
-                    color: '#020617',
-                  }}
-                  labelStyle={{ color: '#020617', fontWeight: 700 }}
-                  itemStyle={{ color: '#020617' }}
-                />
-                <Legend formatter={(value) => value} wrapperStyle={{ paddingTop: 12 }} iconType="circle" />
-              </PieChart>
+      {/* Row 1: Cumulative Spend + Category Donut */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        <ChartShell title="Monthly Spend + Running Total" sub="Bars = monthly spend · Line = cumulative" className="lg:col-span-2">
+          {timeline.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={timeline} margin={{ left: 4, right: 16, top: 8, bottom: 4 }}>
+                <defs>
+                  <linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(148,163,184,0.08)" vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <YAxis yAxisId="bar" tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                <YAxis yAxisId="line" orientation="right" tick={{ fill: '#6366f1', fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                <Tooltip {...TOOLTIP} formatter={(v, name) => [fmt$(v), name === 'cumulative' ? 'Running Total' : 'Monthly Spend']} />
+                <Legend formatter={v => <span className="text-[11px] text-slate-300">{v === 'total' ? 'Monthly Spend' : 'Running Total'}</span>} />
+                <Bar yAxisId="bar" dataKey="total" fill="#22d3ee" radius={[3,3,0,0]} name="total" />
+                <Area yAxisId="line" type="monotone" dataKey="cumulative" stroke="#6366f1" fill="url(#cumGrad)" strokeWidth={2} dot={false} name="cumulative" />
+              </ComposedChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-slate-400">
-              No status data was available for this dataset.
-            </div>
+            <div className="h-[260px] flex items-center justify-center text-xs text-ink-muted">No date data available</div>
           )}
-        </ChartCard>
+        </ChartShell>
 
-        <ChartCard title="Profit by Project" description="Project-level contribution to total profitability." className="xl:col-span-2">
-          <div className="overflow-x-auto">
-          <div className="h-[360px] min-w-[720px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topProfitProjects} margin={chartMargin}>
-              <CartesianGrid stroke="rgba(148,163,184,0.15)" vertical={false} />
-              <XAxis dataKey="projectName" tickFormatter={(value) => fullProjectName(value)} angle={-35} textAnchor="end" height={80} tick={{ fill: '#cbd5e1', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#cbd5e1', fontSize: 12 }} />
-              <Tooltip
-                labelFormatter={tooltipLabelFormatter}
-                formatter={(value, name) => [formatCurrency(value), labelMap[name] || name]}
-                contentStyle={{
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid rgba(15, 23, 42, 0.08)',
-                  borderRadius: '16px',
-                  color: '#020617',
-                }}
-                labelStyle={{ color: '#020617', fontWeight: 700 }}
-                itemStyle={{ color: '#020617' }}
-              />
-              <Legend formatter={legendFormatter} wrapperStyle={{ paddingTop: 12 }} iconType="circle" />
-              <Bar dataKey="profit" fill="#38bdf8" radius={[6, 6, 0, 0]} />
-            </BarChart>
+        <ChartShell title="Spend by Category" sub="Auto-detected from invoice descriptions">
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie data={categories} dataKey="total" nameKey="category" cx="50%" cy="42%"
+                innerRadius={52} outerRadius={90} paddingAngle={2}>
+                {categories.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip {...TOOLTIP} formatter={v => [fmt$(v), 'Spend']} />
+              <Legend iconType="circle" iconSize={8} formatter={v => <span className="text-[11px] text-slate-300">{v}</span>} />
+            </PieChart>
           </ResponsiveContainer>
-          </div>
-          </div>
-        </ChartCard>
-
-        <ChartCard title="Margin by Project" description="Margin percent after cost normalization and cleaning.">
-          <div className="overflow-x-auto">
-          <div className="h-[360px] min-w-[720px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topMarginProjects} margin={chartMargin}>
-              <CartesianGrid stroke="rgba(148,163,184,0.15)" vertical={false} />
-              <XAxis dataKey="projectName" tickFormatter={(value) => fullProjectName(value)} angle={-35} textAnchor="end" height={80} tick={{ fill: '#cbd5e1', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#cbd5e1', fontSize: 12 }} tickFormatter={(value) => `${value}%`} />
-              <Tooltip
-                labelFormatter={tooltipLabelFormatter}
-                formatter={(value, name) => [`${value}%`, labelMap[name] || name]}
-                contentStyle={{
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid rgba(15, 23, 42, 0.08)',
-                  borderRadius: '16px',
-                  color: '#020617',
-                }}
-                labelStyle={{ color: '#020617', fontWeight: 700 }}
-                itemStyle={{ color: '#020617' }}
-              />
-              <Legend formatter={legendFormatter} wrapperStyle={{ paddingTop: 12 }} iconType="circle" />
-              <Bar dataKey="marginPercent" fill="#a78bfa" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-          </div>
-          </div>
-        </ChartCard>
+        </ChartShell>
       </div>
-      </ScrollReveal>
 
-      <ScrollReveal delay={120}>
-      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-        <DataTable
-          rows={data.rows.slice(0, 10)}
-          variant="cleaned"
-          title="Cleaned Rows"
-          subtitle="Showing cleaned business-ready rows."
-        />
-        <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-6">
-          <div className="mb-5">
-            <h2 className="text-lg font-bold text-white">Business Insights</h2>
-            <p className="mt-1 text-sm text-slate-400">Automated business insights generated from the cleaned dataset.</p>
+      {/* Row 2: Payables by Project ($ + count) + Invoice Count */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <ChartShell title="Payables by Project" sub="Total spend per project code">
+          <ResponsiveContainer width="100%" height={Math.max(220, projects.length * 32)}>
+            <BarChart data={projects} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+              <CartesianGrid stroke="rgba(148,163,184,0.08)" horizontal={false} />
+              <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="project" width={130} tick={{ fill: '#cbd5e1', fontSize: 11 }}
+                tickFormatter={v => v.length > 18 ? v.slice(0, 18) + '…' : v} />
+              <Tooltip {...TOOLTIP} formatter={(v, name) => [name === 'count' ? v : fmt$(v), name === 'count' ? 'Invoices' : 'Payables']} />
+              <Bar dataKey="total" fill="#6366f1" radius={[0, 4, 4, 0]}>
+                {projects.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartShell>
+
+        <ChartShell title="Invoice Count by Project" sub="Number of invoices processed per project">
+          <ResponsiveContainer width="100%" height={Math.max(220, projects.length * 32)}>
+            <BarChart data={[...projects].sort((a, b) => (b.count||0) - (a.count||0))} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+              <CartesianGrid stroke="rgba(148,163,184,0.08)" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+              <YAxis type="category" dataKey="project" width={130} tick={{ fill: '#cbd5e1', fontSize: 11 }}
+                tickFormatter={v => v.length > 18 ? v.slice(0, 18) + '…' : v} />
+              <Tooltip {...TOOLTIP} formatter={v => [v, 'Invoices']} />
+              <Bar dataKey="count" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartShell>
+      </div>
+
+      {/* Row 3: Category trend by month (stacked) + Top Vendors */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        <ChartShell title="Monthly Spend by Category" sub="See which cost types are growing each month" className="lg:col-span-2">
+          {monthlyByCat.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={monthlyByCat} margin={{ left: 4, right: 8, top: 8, bottom: 4 }}>
+                <CartesianGrid stroke="rgba(148,163,184,0.08)" vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                <Tooltip {...TOOLTIP} formatter={v => [fmt$(v)]} />
+                <Legend iconType="circle" iconSize={8} formatter={v => <span className="text-[11px] text-slate-300">{v}</span>} />
+                {allCats.map((cat, i) => (
+                  <Bar key={cat} dataKey={cat} stackId="a" fill={PIE_COLORS[i % PIE_COLORS.length]}
+                    radius={i === allCats.length - 1 ? [3,3,0,0] : [0,0,0,0]} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[260px] flex items-center justify-center text-xs text-ink-muted">No monthly data available</div>
+          )}
+        </ChartShell>
+
+        <ChartShell title="Top Vendors by Spend" sub={`${vendors.length} vendors`}>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={vendors.slice(0, 8)} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+              <CartesianGrid stroke="rgba(148,163,184,0.08)" horizontal={false} />
+              <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="vendor" width={140} tick={{ fill: '#cbd5e1', fontSize: 10 }}
+                tickFormatter={v => v.length > 20 ? v.slice(0, 20) + '…' : v} />
+              <Tooltip {...TOOLTIP} formatter={v => [fmt$(v), 'Total Invoiced']} />
+              <Bar dataKey="total" fill="#22d3ee" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartShell>
+      </div>
+
+      {/* Top Invoices */}
+      {topInvoices.length > 0 && (
+        <ChartShell title="Largest Invoices" sub="Sorted by amount — highest single invoices">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-rim text-ink-muted">
+                  {['#','Project','Vendor','Invoice #','Description','HST','Amount'].map(h => (
+                    <th key={h} className="text-left py-2 pr-4 font-medium whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayInvoices.map((inv, i) => (
+                  <tr key={i} className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors ${inv.amount < 0 ? 'text-emerald-400' : ''}`}>
+                    <td className="py-2 pr-3 text-ink-muted font-mono">{i + 1}</td>
+                    <td className="py-2 pr-4 max-w-[110px]"><span className="truncate block text-white/80">{inv.project}</span></td>
+                    <td className="py-2 pr-4 max-w-[130px]"><span className="truncate block text-white/80">{inv.vendor}</span></td>
+                    <td className="py-2 pr-4 text-ink-muted font-mono">{inv.invoiceNumber || '—'}</td>
+                    <td className="py-2 pr-4 max-w-[200px]">
+                      <span className="truncate block text-white/70" title={inv.description}>{inv.description}</span>
+                    </td>
+                    <td className="py-2 pr-4 text-right font-mono text-ink-muted">{inv.hst > 0 ? fmt$(inv.hst) : '—'}</td>
+                    <td className={`py-2 text-right font-mono font-semibold ${inv.amount < 0 ? 'text-emerald-400' : 'text-white'}`}>
+                      {fmt$(inv.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="grid max-h-[620px] gap-4 overflow-y-auto pb-2 pr-1">
-            {data.insights.map((insight, index) => (
-              <InsightCard key={`${insight.label}-${index}`} insight={insight} />
+          {topInvoices.length > 8 && (
+            <button onClick={() => setShowAllInvoices(p => !p)}
+              className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted hover:text-white transition-colors">
+              {showAllInvoices ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {showAllInvoices ? 'Show less' : `Show all ${topInvoices.length} largest invoices`}
+            </button>
+          )}
+        </ChartShell>
+      )}
+
+      {/* Invoice Register */}
+      <ChartShell title="Invoice Register" sub={`All ${rows.length} invoices from ${dataset.originalFileName}`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-rim text-ink-muted">
+                {['Date','Project','Vendor','Invoice #','Description','Subtotal','HST','Total','Flags'].map(h => (
+                  <th key={h} className="text-left py-2 pr-4 font-medium whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayRows.map((row, i) => {
+                const isCredit = (row.cost || row.revenue) < 0;
+                const hasFlag  = row.notes && (row.notes.toLowerCase().includes('verify') || row.notes.toLowerCase().includes('hst'));
+                return (
+                  <tr key={i} className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors ${isCredit ? 'text-emerald-400' : ''}`}>
+                    <td className="py-2 pr-4 whitespace-nowrap text-ink-muted">
+                      {row.invoiceDate ? shortDate(row.invoiceDate) : row.date ? shortDate(row.date) : '—'}
+                    </td>
+                    <td className="py-2 pr-4 max-w-[110px]"><span className="truncate block text-white/80">{row.projectName}</span></td>
+                    <td className="py-2 pr-4 max-w-[130px]"><span className="truncate block text-white/80">{row.vendor || row.clientName || '—'}</span></td>
+                    <td className="py-2 pr-4 text-ink-muted font-mono">{row.invoiceNumber || '—'}</td>
+                    <td className="py-2 pr-4 max-w-[200px]">
+                      <span className="truncate block text-white/70" title={row.description || row.projectName}>
+                        {(row.description || row.projectName || '').slice(0, 48)}{(row.description || '').length > 48 ? '…' : ''}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 text-right font-mono whitespace-nowrap">
+                      {row.hst > 0 ? fmt$(row.cost - row.hst) : '—'}
+                    </td>
+                    <td className="py-2 pr-4 text-right font-mono whitespace-nowrap text-ink-muted">
+                      {row.hst > 0 ? fmt$(row.hst) : '—'}
+                    </td>
+                    <td className={`py-2 pr-4 text-right font-mono font-semibold whitespace-nowrap ${isCredit ? 'text-emerald-400' : 'text-white'}`}>
+                      {fmt$(row.cost !== 0 ? row.cost : row.revenue)}
+                    </td>
+                    <td className="py-2">
+                      <div className="flex gap-1">
+                        {isCredit && <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-medium">Credit</span>}
+                        {hasFlag  && <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[10px] font-medium">HST</span>}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {rows.length > 12 && (
+          <button onClick={() => setShowAllRows(p => !p)}
+            className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted hover:text-white transition-colors">
+            {showAllRows ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {showAllRows ? 'Show less' : `Show all ${rows.length} invoices`}
+          </button>
+        )}
+      </ChartShell>
+
+      {/* HST Issues + Credit Memos */}
+      {(hstIssues.length > 0 || creditMemos.length > 0) && (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {hstIssues.length > 0 && (
+            <ChartShell title="HST Flags" sub="Invoices flagged for tax rate verification">
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {hstIssues.map((item, i) => (
+                  <div key={i} className="rounded-lg bg-amber-500/8 border border-amber-500/20 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-white truncate">{item.vendor}</div>
+                        <div className="text-xs text-ink-muted mt-0.5">{item.project}</div>
+                      </div>
+                      <span className="text-sm font-bold text-amber-400 whitespace-nowrap">{fmt$(item.amount)}</span>
+                    </div>
+                    {item.notes && <p className="text-[11px] text-amber-300/80 mt-1.5 leading-relaxed">{item.notes}</p>}
+                  </div>
+                ))}
+              </div>
+            </ChartShell>
+          )}
+          {creditMemos.length > 0 && (
+            <ChartShell title="Credit Memos" sub="Returns and price corrections (negative amounts)">
+              <div className="space-y-2">
+                {creditMemos.map((item, i) => (
+                  <div key={i} className="rounded-lg bg-emerald-500/8 border border-emerald-500/20 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-white truncate">{item.vendor}</div>
+                        <div className="text-xs text-ink-muted mt-0.5 truncate">{item.description}</div>
+                      </div>
+                      <span className="text-sm font-bold text-emerald-400 whitespace-nowrap">{fmt$(item.amount)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ChartShell>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── standard (non-payables) dashboard ─────────────────────────────────────────
+function StandardDashboard({ data }) {
+  const { summary, chartData, rows } = data;
+  const fmt = (v) => fmt$(v);
+  const topProjects = [...(chartData.projectFinancials || [])].sort((a,b) => b.revenue - a.revenue).slice(0, 10);
+  const topMargin   = [...(chartData.marginByProject   || [])].sort((a,b) => b.marginPercent - a.marginPercent).slice(0, 10);
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        {[
+          { label: 'Total Revenue', value: fmt$(summary.totalRevenue),            color: 'text-emerald-400', bg: 'bg-emerald-500/15', icon: DollarSign },
+          { label: 'Total Cost',    value: fmt$(summary.totalCost),               color: 'text-amber-400',   bg: 'bg-amber-500/15',   icon: TrendingDown },
+          { label: 'Total Profit',  value: fmt$(summary.totalProfit),             color: summary.totalProfit >= 0 ? 'text-teal-400' : 'text-rose-400', bg: 'bg-teal-500/15', icon: CheckCircle2 },
+          { label: 'Avg Margin',    value: fmtPct(summary.averageMargin * 100),   color: 'text-sky-400',     bg: 'bg-sky-500/15',     icon: Zap },
+          { label: 'Projects',      value: summary.projectCount,                  color: 'text-violet-400',  bg: 'bg-violet-500/15',  icon: Building2 },
+          { label: 'Over Budget',   value: summary.overBudgetCount,               color: summary.overBudgetCount > 0 ? 'text-rose-400' : 'text-emerald-400', bg: 'bg-rose-500/15', icon: AlertTriangle },
+        ].map(k => <KpiCard key={k.label} {...k} />)}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-4">
+        <ChartShell title="Revenue vs Cost" sub="Top projects by revenue" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={topProjects} margin={{ bottom: 60, top: 4, left: 0, right: 8 }}>
+              <CartesianGrid stroke="rgba(148,163,184,0.1)" vertical={false} />
+              <XAxis dataKey="projectName" tick={{ fill: '#94a3b8', fontSize: 10 }} angle={-35} textAnchor="end" height={70}
+                tickFormatter={v => v.length > 14 ? v.slice(0,14)+'…' : v} />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <Tooltip {...TOOLTIP} formatter={(v, n) => [fmt$(v), n === 'revenue' ? 'Revenue' : 'Cost']} />
+              <Legend formatter={v => <span className="text-xs text-slate-300">{v === 'revenue' ? 'Revenue' : 'Cost'}</span>} />
+              <Bar dataKey="revenue" fill="#10b981" radius={[4,4,0,0]} />
+              <Bar dataKey="cost"    fill="#f59e0b" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartShell>
+
+        <ChartShell title="Margin by Project" sub="Gross margin %">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={topMargin} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+              <CartesianGrid stroke="rgba(148,163,184,0.1)" horizontal={false} />
+              <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={v => `${v}%`} />
+              <YAxis type="category" dataKey="projectName" width={100} tick={{ fill: '#cbd5e1', fontSize: 10 }}
+                tickFormatter={v => v.length > 14 ? v.slice(0,14)+'…' : v} />
+              <Tooltip {...TOOLTIP} formatter={v => [`${v}%`, 'Margin']} />
+              <Bar dataKey="marginPercent" fill="#a78bfa" radius={[0,4,4,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartShell>
+      </div>
+
+      {/* Category breakdown if available */}
+      {(chartData.categoryBreakdown?.length > 0 || chartData.vendorBreakdown?.length > 0) && (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {chartData.categoryBreakdown?.length > 0 && (
+            <ChartShell title="Spend by Category">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={chartData.categoryBreakdown} dataKey="total" nameKey="category" innerRadius={50} outerRadius={85} paddingAngle={2}>
+                    {chartData.categoryBreakdown.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip {...TOOLTIP} formatter={v => [fmt$(v), 'Spend']} />
+                  <Legend iconType="circle" iconSize={8} formatter={v => <span className="text-[11px] text-slate-300">{v}</span>} />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartShell>
+          )}
+          {chartData.vendorBreakdown?.length > 0 && (
+            <ChartShell title="Top Vendors">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={chartData.vendorBreakdown.slice(0,6)} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="vendor" width={130} tick={{ fill: '#cbd5e1', fontSize: 10 }}
+                    tickFormatter={v => v.length > 20 ? v.slice(0,20)+'…' : v} />
+                  <Tooltip {...TOOLTIP} formatter={v => [fmt$(v), 'Total']} />
+                  <Bar dataKey="total" fill="#22d3ee" radius={[0,4,4,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartShell>
+          )}
+        </div>
+      )}
+
+      {/* Cleaned rows table */}
+      <ChartShell title="Cleaned Rows" sub="Business-ready records">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-rim text-ink-muted">
+                {['Project','Client','Date','Revenue','Cost','Profit','Margin'].map(h => (
+                  <th key={h} className="text-left py-2 pr-4 font-medium">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(0, 15).map((row, i) => (
+                <tr key={i} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                  <td className="py-2 pr-4 max-w-[160px]"><span className="truncate block text-white/80">{row.projectName}</span></td>
+                  <td className="py-2 pr-4 text-ink-muted">{row.clientName || '—'}</td>
+                  <td className="py-2 pr-4 text-ink-muted whitespace-nowrap">{row.date ? shortDate(row.date) : '—'}</td>
+                  <td className="py-2 pr-4 text-right font-mono text-emerald-400">{fmt$(row.revenue)}</td>
+                  <td className="py-2 pr-4 text-right font-mono text-amber-400">{fmt$(row.cost)}</td>
+                  <td className={`py-2 pr-4 text-right font-mono ${row.profit >= 0 ? 'text-teal-400' : 'text-rose-400'}`}>{fmt$(row.profit)}</td>
+                  <td className="py-2 text-right font-mono text-slate-300">{fmtPct(row.marginPercent)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ChartShell>
+    </div>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
+export function DashboardPage() {
+  const { id }      = useParams();
+  const navigate    = useNavigate();
+  const [data, setData]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
+  const [reportOpen, setReportOpen] = useState(false);
+  const [mappingOpen, setMappingOpen] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    fetchDatasetById(id)
+      .then(setData)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return (
+    <div className="p-6 space-y-4">
+      {[1,2,3,4].map(i => <div key={i} className="h-20 rounded-xl bg-surface border border-rim animate-pulse" />)}
+    </div>
+  );
+
+  if (error || !data) return (
+    <div className="p-6 flex flex-col items-center justify-center py-24 text-center">
+      <FileText className="w-12 h-12 text-ink-muted/30 mb-4" />
+      <div className="text-white/60 font-medium">{error || 'Dataset not found'}</div>
+      <button onClick={() => navigate('/app/history')} className="mt-4 text-sm text-brand-400 hover:text-brand-300 underline">
+        Back to Upload History
+      </button>
+    </div>
+  );
+
+  const isPayables = data.summary.totalCost > 0 && data.summary.totalRevenue === 0;
+
+  return (
+    <div className="p-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={() => navigate('/app/history')}
+            className="w-8 h-8 rounded-lg bg-surface border border-rim flex items-center justify-center text-ink-muted hover:text-white hover:border-brand-500/40 transition-colors shrink-0">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg font-bold text-white truncate">{data.dataset.name}</h1>
+              {isPayables && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/25 font-medium">
+                  Payables Register
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-ink-muted mt-0.5">
+              {data.dataset.originalFileName} · {data.dataset.rowCount} rows · uploaded {new Date(data.dataset.createdAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button onClick={() => setMappingOpen(true)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-rim text-ink-muted hover:text-white hover:border-brand-500/40 transition-colors">
+            <Tag className="w-3.5 h-3.5" /> Column Map
+          </button>
+          <button onClick={() => setReportOpen(true)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-rim text-ink-muted hover:text-white hover:border-brand-500/40 transition-colors">
+            <FileText className="w-3.5 h-3.5" /> PDF Report
+          </button>
+          <Link to="/app/upload"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors">
+            <Upload className="w-3.5 h-3.5" /> Upload New
+          </Link>
+        </div>
+      </div>
+
+      {/* Executive Summary */}
+      {data.executiveSummary?.length > 0 && (
+        <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-3.5 h-3.5 text-brand-400" />
+            <span className="text-xs font-semibold text-brand-400 uppercase tracking-wide">Auto Summary</span>
+          </div>
+          <div className="space-y-1">
+            {data.executiveSummary.map((line, i) => (
+              <p key={i} className="text-sm text-white/80 leading-relaxed">{line}</p>
             ))}
           </div>
         </div>
-      </div>
-      </ScrollReveal>
+      )}
 
-      <ColumnMappingModal
-        isOpen={isMappingOpen}
-        onClose={() => setIsMappingOpen(false)}
-        columnMapping={data.columnMapping || data.dataset.columnMapping}
-      />
-      <ReportPreviewModal
-        isOpen={isReportOpen}
-        onClose={() => setIsReportOpen(false)}
-        data={data}
-      />
+      {/* Main dashboard */}
+      {isPayables
+        ? <PayablesDashboard data={data} />
+        : <StandardDashboard data={data} />
+      }
+
+      <ColumnMappingModal isOpen={mappingOpen} onClose={() => setMappingOpen(false)}
+        columnMapping={data.columnMapping || data.dataset.columnMapping} />
+      <ReportPreviewModal isOpen={reportOpen} onClose={() => setReportOpen(false)} data={data} />
     </div>
   );
 }

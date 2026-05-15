@@ -28,20 +28,27 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res, next
     const cleaned = cleanRows(parsed.rows, parsed.headers);
     const warnings = [...parsed.warnings, ...cleaned.warnings];
 
-    const dataset = await prisma.dataset.create({
-      data: {
-        userId: req.user.id,
-        name: createDatasetName(req.file.originalname),
-        originalFileName: req.file.originalname,
-        fileType: parsed.fileType,
-        rawRowCount: parsed.rows.length,
-        rowCount: cleaned.cleanedRows.length,
-        duplicateRowsRemoved: cleaned.stats.duplicateRowsRemoved,
-        missingValuesFixed: cleaned.stats.missingValuesFixed,
-        columnMapping: cleaned.stats.columnMapping,
-        warnings,
-        rows: {
-          create: cleaned.cleanedRows.map((row) => ({
+    // Two-step write: create dataset then bulk-insert rows (faster + avoids nested-create timeout)
+    const [dataset] = await prisma.$transaction(
+      async (tx) => {
+        const ds = await tx.dataset.create({
+          data: {
+            userId: req.user.id,
+            name: createDatasetName(req.file.originalname),
+            originalFileName: req.file.originalname,
+            fileType: parsed.fileType,
+            rawRowCount: parsed.rows.length,
+            rowCount: cleaned.cleanedRows.length,
+            duplicateRowsRemoved: cleaned.stats.duplicateRowsRemoved,
+            missingValuesFixed: cleaned.stats.missingValuesFixed,
+            columnMapping: cleaned.stats.columnMapping,
+            warnings,
+          },
+        });
+
+        await tx.businessRow.createMany({
+          data: cleaned.cleanedRows.map((row) => ({
+            datasetId: ds.id,
             projectName: row.projectName,
             clientName: row.clientName,
             status: row.status,
@@ -54,16 +61,16 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res, next
             isOverBudget: row.isOverBudget,
             rawJson: row.rawJson,
           })),
-        },
+        });
+
+        const fullDs = await tx.dataset.findUnique({
+          where: { id: ds.id },
+          include: { rows: { orderBy: { createdAt: 'asc' } } },
+        });
+        return [fullDs];
       },
-      include: {
-        rows: {
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
-      },
-    });
+      { timeout: 60000 }, // 60-second transaction timeout
+    );
 
     const displayRows = sanitizeRowsForDisplay(dataset.rows);
     const summary = buildSummary(dataset.rows);

@@ -9,6 +9,9 @@ export const uploadDataset = async (file, onProgress) => {
     xhr.open('POST', `${API_BASE}/upload`);
     xhr.withCredentials = true;
 
+    xhr.timeout = 120000; // 2-minute timeout
+    xhr.ontimeout = () => reject(new Error('Upload timed out. The server took too long to respond — please try again.'));
+
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && typeof onProgress === 'function') {
         onProgress(Math.round((event.loaded / event.total) * 100));

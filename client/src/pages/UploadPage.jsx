@@ -159,7 +159,7 @@ export function UploadPage() {
                 <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setIsPreviewOpen(true)}>
                   View Cleaned Data
                 </Button>
-                <Button className="w-full sm:w-auto" as={Link} to={`/dashboard/${uploadResult.datasetId}`}>
+                <Button className="w-full sm:w-auto" as={Link} to={`/app/dashboard/${uploadResult.datasetId}`}>
                   Open Dashboard Analysis
                 </Button>
                 <Button

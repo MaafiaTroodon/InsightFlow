@@ -7,7 +7,8 @@ export default defineConfig({
     port: 4000,
     strictPort: true,
     proxy: {
-      '/api': 'http://localhost:5001',
+      '/api':     'http://localhost:5001',
+      '/uploads': 'http://localhost:5001',
     },
   },
 });
