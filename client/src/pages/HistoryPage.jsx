@@ -106,7 +106,7 @@ export function HistoryPage() {
 
                 <div className="grid gap-3 sm:flex sm:flex-wrap">
                   <Button className="w-full sm:w-auto" variant="secondary" onClick={() => handleOpenPreview(dataset.id)}>View Data</Button>
-                  <Button className="w-full sm:w-auto" as={Link} to={`/dashboard/${dataset.id}`}>Open Dashboard</Button>
+                  <Button className="w-full sm:w-auto" as={Link} to={`/app/dashboard/${dataset.id}`}>Open Dashboard</Button>
                   <Button className="w-full sm:w-auto" type="button" variant="danger" onClick={() => setDatasetToDelete(dataset)}>Delete</Button>
                 </div>
               </div>

@@ -1371,7 +1371,7 @@ export function ConstructionProjectDetailPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6">
       <div className="mb-6 flex items-start gap-3">
-        <Link to="/construction" className="mt-1 text-slate-400 hover:text-white transition text-sm">
+        <Link to="/app/construction" className="mt-1 text-slate-400 hover:text-white transition text-sm">
           ← Projects
         </Link>
       </div>

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Dataset {
@@ -36,29 +37,6 @@ model User {
   jobLogs              JobLog[]
   constructionProjects ConstructionProject[]
   projectTrades        ProjectTrade[]
-}
-
-model JobLog {
-  id           String   @id
-  userId       String
-  projectName  String
-  siteLocation String?
-  logDate      DateTime
-  author       String?
-  weather      String?
-  rawText      String
-  summary      String?
-  delays       Json?
-  contractors  Json?
-  risks        Json?
-  actionItems  Json?
-  riskLevel    String   @default("low")
-  createdAt    DateTime @default(now())
-  attachments  Json?
-  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([logDate])
-  @@index([userId])
 }
 
 model ConstructionProject {
@@ -213,6 +191,29 @@ model ProjectTrade {
   user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+model JobLog {
+  id           String   @id @default(cuid())
+  userId       String
+  projectName  String
+  siteLocation String?
+  logDate      DateTime
+  author       String?
+  weather      String?
+  rawText      String   @db.Text
+  summary      String?  @db.Text
+  delays       Json?
+  contractors  Json?
+  risks        Json?
+  actionItems  Json?
+  riskLevel    String   @default("low")
+  attachments  Json?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([logDate])
 }
 
 model BusinessRow {
