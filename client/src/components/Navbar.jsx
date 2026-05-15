@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Home', to: '/' },
   { label: 'Upload', to: '/upload' },
   { label: 'History', to: '/history' },
+  { label: 'Construction', to: '/construction' },
   { label: 'Architecture', to: '/architecture' },
 ];
 

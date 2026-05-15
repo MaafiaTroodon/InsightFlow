@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import authRouter from './routes/auth.js';
 import uploadRouter from './routes/upload.js';
 import datasetsRouter from './routes/datasets.js';
+import constructionRouter from './routes/construction.js';
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api', authRouter);
 app.use('/api', uploadRouter);
 app.use('/api', datasetsRouter);
+app.use('/api', constructionRouter);
 
 app.use((error, _req, res, _next) => {
   console.error(error);
